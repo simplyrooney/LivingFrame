@@ -1,0 +1,13 @@
+{
+  "name": "living-frame-backend-netlify-v5",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0",
+    "nanoid": "^5.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
