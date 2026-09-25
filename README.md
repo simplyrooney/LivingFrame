@@ -1,94 +1,26 @@
-# Living Frame Processing V1
+# Living Frame MyWebAR Bridge V1
 
-This package adds the first real video-processing pipeline.
+This adds a manual MyWebAR bridge without changing the automated Living Frame processing pipeline.
 
-## What it does
+## Backend V6
+Deploy `backend-netlify-v6` as the backend base directory.
 
-1. Customer uploads photo + video.
-2. Netlify backend marks the frame `processing`.
-3. Worker polls Supabase for queued frames.
-4. Worker downloads the private photo and video.
-5. Reads the photo dimensions.
-6. Center-crops the video to the photo aspect ratio.
-7. Never stretches the video.
-8. Encodes H.264/AAC MP4 with fast-start.
-9. Uploads to `living-frame-processed`.
-10. Updates the frame:
-   - `processed_video_path`
-   - `target_width`
-   - `target_height`
-   - `status = ready`
+New endpoints:
+- PATCH `/api/frames/:id/ar` — save a published MyWebAR URL
+- GET `/api/public/frames/:frameCode` — safe public lookup for the AR viewer
 
-## Step 1 — Run the SQL migration
+Health check should show `version: 6.0.0`.
 
-In Supabase SQL Editor run:
+## Frontend patch
+Copy `frontend-patch/ar-viewer.html` into the root of the finalized frontend repository and redeploy.
 
-`sql/002_processing.sql`
+Viewer:
+`https://resilient-arithmetic-e273b1.netlify.app/ar-viewer.html?frame=LF-6CSUU7EZ`
 
-## Step 2 — Deploy backend V5
+## Current test frame
+1. Manually create/publish the MyWebAR flat-image experience using the original target image and processed video.
+2. Copy the published HTTPS experience URL.
+3. Run `attach-mywebar.ps1` after inserting that URL and using a fresh `$token`.
+4. Open the viewer URL above.
 
-Replace the current Netlify backend repo contents with the files inside:
-
-`backend-netlify-v5/`
-
-Keep the same Netlify environment variables.
-
-After deploy, `/api/health` should show:
-
-`version: 5.0.0`
-
-## Step 3 — Deploy the worker
-
-The worker is a Docker app and needs FFmpeg. Do not deploy it as a normal Netlify Function.
-
-Use any Docker-capable service or run locally for the first test.
-
-Worker environment variables:
-
-- SUPABASE_URL
-- SUPABASE_SERVICE_ROLE_KEY
-- PHOTO_BUCKET=living-frame-photos
-- VIDEO_BUCKET=living-frame-videos
-- PROCESSED_BUCKET=living-frame-processed
-- POLL_INTERVAL_MS=5000
-
-## Local worker test
-
-Docker:
-
-```bash
-docker build -t living-frame-worker ./worker
-docker run --rm --env-file worker/.env living-frame-worker
-```
-
-Or install Node 20 + FFmpeg locally, then:
-
-```bash
-cd worker
-npm install
-npm start
-```
-
-## Queue the existing test frame
-
-After Backend V5 is deployed and you have a fresh Supabase access token:
-
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "$backend/api/frames/$frameId/process" `
-  -Headers $headers
-```
-
-The API should return status `processing`.
-
-The worker then processes it and the frame should become `ready`.
-
-## Expected database result
-
-- status = ready
-- processed_video_path = <private object path>
-- target_width = actual source-photo width
-- target_height = actual source-photo height
-- processing_started_at = timestamp
-- processing_completed_at = timestamp
+If MyWebAR refuses iframe embedding in a specific browser/session, the viewer includes a direct-open fallback.
