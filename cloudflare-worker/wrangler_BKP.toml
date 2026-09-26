@@ -5,6 +5,3 @@ compatibility_date = "2026-09-26"
 [vars]
 FRONTEND_ORIGIN = "https://living-frame.pages.dev"
 SUPABASE_URL = "https://wmewylplpsyomqrahiwe.supabase.co"
-ADMIN_USER_ID = "ce24c0b0-84d7-4486-ba6e-1c0926390c56"
-PHOTO_BUCKET = "living-frame-photos"
-VIDEO_BUCKET = "living-frame-videos"
