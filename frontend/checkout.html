@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Delivery · Living Frame</title>
+<link rel="stylesheet" href="./assets/css/order.css">
+</head>
+<body>
+<header class="site-nav shell"><a class="brand" href="./">Living Frame</a><span class="checkout-step">Delivery details</span></header>
+<main class="checkout shell">
+  <section class="checkout-main">
+    <p class="eyebrow">STEP 2</p>
+    <h1 class="checkout-title">Where should we send it?</h1>
+    <form id="deliveryForm" class="delivery-form">
+      <div class="two"><label>Full name<input name="customer_name" required></label><label>Phone<input name="phone" inputmode="tel" required></label></div>
+      <label>Email<input name="customer_email" type="email" required></label>
+      <label>Address<input name="address_line1" required></label>
+      <label>Apartment / landmark <span>(optional)</span><input name="address_line2"></label>
+      <div class="two"><label>City<input name="city" required></label><label>State<input name="state" required></label></div>
+      <div class="two"><label>PIN code<input name="postal_code" inputmode="numeric" required></label><label>Country<input name="country" value="India" required></label></div>
+      <button class="btn primary full" type="submit">Continue to payment →</button>
+      <p id="checkoutError" class="error"></p>
+    </form>
+  </section>
+
+  <aside class="summary">
+    <p class="eyebrow">YOUR ORDER</p>
+    <div class="summary-row"><span>Order</span><b id="orderNumber">—</b></div>
+    <div class="summary-row"><span>Customer ID</span><b id="customerId">—</b></div>
+    <div class="summary-row"><span>Frame</span><b id="frameVariant">—</b></div>
+    <div class="summary-row"><span>Size</span><b id="frameSize">—</b></div>
+    <div class="summary-row"><span>Photo</span><b>Uploaded ✓</b></div>
+    <div class="summary-row"><span>Video</span><b>Uploaded ✓</b></div>
+  </aside>
+</main>
+<script src="./assets/js/checkout.js"></script>
+</body>
+</html>

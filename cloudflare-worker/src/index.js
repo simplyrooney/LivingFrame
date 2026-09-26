@@ -5,17 +5,23 @@ export default{
   const url=new URL(request.url);
   const origin=request.headers.get("Origin")||"";
   const allowedOrigin=(origin==="https://living-frame.pages.dev"||/^https:\/\/[a-z0-9-]+\.living-frame\.pages\.dev$/i.test(origin))?origin:env.FRONTEND_ORIGIN;
-  const cors={"Access-Control-Allow-Origin":allowedOrigin||"*","Access-Control-Allow-Headers":"Authorization, Content-Type","Access-Control-Allow-Methods":"GET, POST, PATCH, OPTIONS","Access-Control-Expose-Headers":"Content-Disposition, Content-Type","Vary":"Origin"};
+  const cors={
+    "Access-Control-Allow-Origin":allowedOrigin||"*",
+    "Access-Control-Allow-Headers":"Authorization, Content-Type, X-Razorpay-Signature",
+    "Access-Control-Allow-Methods":"GET, POST, PATCH, OPTIONS",
+    "Access-Control-Expose-Headers":"Content-Disposition, Content-Type",
+    "Vary":"Origin"
+  };
   if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
 
   try{
    if(request.method==="GET"&&url.pathname==="/api/health")
-    return json({ok:true,service:"living-frame-backend",runtime:"cloudflare-workers",version:"3.0.0"},200,cors);
+    return json({ok:true,service:"living-frame-backend",runtime:"cloudflare-workers",version:"4.0.0"},200,cors);
 
    if(request.method==="GET"&&url.pathname==="/api/public/config")
     return json({supabase_url:env.SUPABASE_URL,supabase_publishable_key:env.SUPABASE_ANON_KEY},200,cors);
 
-   // CUSTOMER ORDER: create a guest draft and signed upload URLs.
+   // ---------- CUSTOMER ORDER ----------
    if(request.method==="POST"&&url.pathname==="/api/public/orders/draft"){
     const b=await request.json().catch(()=>({}));
     validateDraft(b);
@@ -40,20 +46,7 @@ export default{
     const oi=await rest(env,"orders","POST",orderRow,"return=minimal");
     if(!oi.ok)return json({error:"Could not create order",detail:await oi.text()},500,cors);
 
-    const frameRow={
-      frame_code:frameCode,title:`Living Frame ${orderNumber}`,status:"draft",
-      customer_id:customerId,photo_path:photoPath,video_path:videoPath
-    };
-    const fi=await rest(env,"frames","POST",frameRow,"return=representation");
-    if(!fi.ok)return json({error:"Could not create frame",detail:await fi.text()},500,cors);
-    const frames=await fi.json();
-    const frameId=frames?.[0]?.id||null;
-
-    await fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`,{
-      method:"PATCH",headers:{...svc(env),"Content-Type":"application/json","Prefer":"return=minimal"},
-      body:JSON.stringify({frame_id:frameId})
-    });
-
+    // IMPORTANT: no frame/admin fulfilment row is created before payment.
     const photoUpload=await createSignedUpload(env,env.PHOTO_BUCKET||"living-frame-photos",photoPath);
     const videoUpload=await createSignedUpload(env,env.VIDEO_BUCKET||"living-frame-videos",videoPath);
     if(!photoUpload||!videoUpload)return json({error:"Could not prepare file uploads"},500,cors);
@@ -72,7 +65,6 @@ export default{
     if(!order.ok)return json({error:order.error},order.status,cors);
 
     await patchOrder(env,orderId,{status:"assets_uploaded"});
-    if(order.data.frame_id)await patchFrame(env,order.data.frame_id,{status:"assets_uploaded"});
     return json({ok:true,status:"assets_uploaded"},200,cors);
    }
 
@@ -93,15 +85,142 @@ export default{
       postal_code:clean(b.postal_code,20),country:clean(b.country,80),
       status:"delivery_complete"
     };
-    await patchOrder(env,orderId,patch);
-    if(order.data.frame_id)await patchFrame(env,order.data.frame_id,{
-      customer_name:patch.customer_name,customer_email:patch.customer_email,
-      status:"assets_uploaded"
-    });
+    const pr=await patchOrder(env,orderId,patch);
+    if(!pr.ok)return json({error:"Could not save delivery details",detail:await pr.text()},500,cors);
     return json({ok:true,status:"delivery_complete",payment_status:"pending"},200,cors);
    }
 
-   // Existing public AR lookup.
+   // Create Razorpay order from trusted backend price.
+   const createPay=url.pathname.match(/^\/api\/public\/orders\/([^/]+)\/payment\/create$/);
+   if(request.method==="POST"&&createPay){
+    assertRazorpayConfigured(env);
+    const orderId=decodeURIComponent(createPay[1]),b=await request.json().catch(()=>({}));
+    const order=await requireOrderToken(env,orderId,b.order_token);
+    if(!order.ok)return json({error:order.error},order.status,cors);
+    const o=order.data;
+
+    if(!["delivery_complete","payment_processing","paid"].includes(o.status))
+      return json({error:"Complete delivery details before payment"},409,cors);
+
+    if(o.payment_status==="paid")
+      return json({error:"This order is already paid"},409,cors);
+
+    const amount=serverPrice(o.frame_variant,o.frame_size,env);
+    if(!amount)return json({error:"Price is not configured for this frame"},500,cors);
+
+    let razorpayOrderId=o.razorpay_order_id;
+    if(!razorpayOrderId){
+      const rp=await razorpay(env,"/v1/orders","POST",{
+        amount,currency:"INR",receipt:o.order_number,
+        notes:{living_frame_order_id:o.id,customer_id:o.customer_id,frame_code:o.frame_code}
+      });
+      if(!rp.ok)return json({error:"Could not create Razorpay order",detail:await rp.text()},502,cors);
+      const d=await rp.json();
+      razorpayOrderId=d.id;
+      await patchOrder(env,o.id,{
+        razorpay_order_id:razorpayOrderId,
+        price_paise:amount,
+        currency:"INR",
+        payment_status:"pending",
+        status:"payment_processing"
+      });
+    }
+
+    return json({
+      key_id:env.RAZORPAY_KEY_ID,
+      razorpay_order_id:razorpayOrderId,
+      amount,
+      currency:"INR",
+      order_number:o.order_number,
+      customer_name:o.customer_name,
+      customer_email:o.customer_email,
+      phone:o.phone
+    },200,cors);
+   }
+
+   // Checkout signature verification.
+   const verifyPay=url.pathname.match(/^\/api\/public\/orders\/([^/]+)\/payment\/verify$/);
+   if(request.method==="POST"&&verifyPay){
+    assertRazorpayConfigured(env);
+    const orderId=decodeURIComponent(verifyPay[1]),b=await request.json().catch(()=>({}));
+    const order=await requireOrderToken(env,orderId,b.order_token);
+    if(!order.ok)return json({error:order.error},order.status,cors);
+    const o=order.data;
+
+    if(!b.razorpay_order_id||!b.razorpay_payment_id||!b.razorpay_signature)
+      return json({error:"Incomplete payment response"},400,cors);
+
+    if(o.razorpay_order_id!==b.razorpay_order_id)
+      return json({error:"Payment order mismatch"},400,cors);
+
+    const expected=await hmacHex(env.RAZORPAY_KEY_SECRET,`${b.razorpay_order_id}|${b.razorpay_payment_id}`);
+    if(!timingSafeEqual(expected,String(b.razorpay_signature)))
+      return json({error:"Payment signature verification failed"},400,cors);
+
+    const p=await razorpay(env,`/v1/payments/${encodeURIComponent(b.razorpay_payment_id)}`,"GET");
+    if(!p.ok)return json({error:"Could not verify payment status with Razorpay"},502,cors);
+    const payment=await p.json();
+
+    const expectedAmount=Number(o.price_paise||serverPrice(o.frame_variant,o.frame_size,env));
+    if(payment.order_id!==o.razorpay_order_id||Number(payment.amount)!==expectedAmount||payment.currency!=="INR")
+      return json({error:"Payment details do not match this order"},400,cors);
+
+    if(payment.status==="captured"){
+      await markOrderPaid(env,o,b.razorpay_payment_id);
+      return json({ok:true,payment_status:"paid",status:"paid"},200,cors);
+    }
+
+    await patchOrder(env,o.id,{
+      razorpay_payment_id:b.razorpay_payment_id,
+      payment_status:"processing",
+      status:"payment_processing"
+    });
+    return json({ok:true,payment_status:"processing",status:"payment_processing"},202,cors);
+   }
+
+   const statusRoute=url.pathname.match(/^\/api\/public\/orders\/([^/]+)\/status$/);
+   if(request.method==="POST"&&statusRoute){
+    const orderId=decodeURIComponent(statusRoute[1]),b=await request.json().catch(()=>({}));
+    const order=await requireOrderToken(env,orderId,b.order_token);
+    if(!order.ok)return json({error:order.error},order.status,cors);
+    const o=order.data;
+    return json({
+      order_number:o.order_number,customer_id:o.customer_id,frame_code:o.frame_code,
+      frame_variant:o.frame_variant,frame_size:o.frame_size,
+      payment_status:o.payment_status,status:o.status
+    },200,cors);
+   }
+
+   // Razorpay webhook: raw-body HMAC verification.
+   if(request.method==="POST"&&url.pathname==="/api/razorpay/webhook"){
+    if(!env.RAZORPAY_WEBHOOK_SECRET)return json({error:"Webhook secret not configured"},500,cors);
+    const raw=await request.text();
+    const sig=request.headers.get("X-Razorpay-Signature")||"";
+    const expected=await hmacHex(env.RAZORPAY_WEBHOOK_SECRET,raw);
+    if(!timingSafeEqual(expected,sig))return json({error:"Invalid webhook signature"},400,cors);
+
+    let event;try{event=JSON.parse(raw)}catch{return json({error:"Invalid JSON"},400,cors)}
+    const payment=event?.payload?.payment?.entity;
+
+    if(payment?.order_id){
+      const qr=await fetch(`${env.SUPABASE_URL}/rest/v1/orders?razorpay_order_id=eq.${encodeURIComponent(payment.order_id)}&select=*&limit=1`,{headers:svc(env)});
+      if(qr.ok){
+        const rows=await qr.json(),o=rows?.[0];
+        if(o){
+          if(event.event==="payment.captured"){
+            const expectedAmount=Number(o.price_paise||serverPrice(o.frame_variant,o.frame_size,env));
+            if(Number(payment.amount)===expectedAmount&&payment.currency==="INR")
+              await markOrderPaid(env,o,payment.id);
+          }else if(event.event==="payment.failed"){
+            await patchOrder(env,o.id,{razorpay_payment_id:payment.id,payment_status:"failed",status:"payment_failed"});
+          }
+        }
+      }
+    }
+    return json({ok:true},200,cors);
+   }
+
+   // ---------- EXISTING PUBLIC AR ----------
    const pub=url.pathname.match(/^\/api\/public\/frames\/([^/]+)$/);
    if(request.method==="GET"&&pub){
     const code=decodeURIComponent(pub[1]).toUpperCase();
@@ -111,7 +230,7 @@ export default{
     return json({...f,ar_ready:Boolean(f.ar_experience_url)},200,cors);
    }
 
-   // Existing admin frame listing.
+   // ---------- EXISTING ADMIN ----------
    if(request.method==="GET"&&url.pathname==="/api/admin/frames"){
     const admin=await requireAdmin(request,env);if(!admin.ok)return json({error:admin.error},admin.status,cors);
     const r=await fetch(`${env.SUPABASE_URL}/rest/v1/frames?select=id,frame_code,user_id,customer_id,title,status,photo_path,video_path,ar_provider,ar_target_id,ar_experience_url,customer_name,customer_email,admin_notes,created_at,updated_at&order=created_at.desc`,{headers:svc(env)});
@@ -159,7 +278,10 @@ export default{
    }
 
    return json({error:"Not found"},404,cors);
-  }catch(err){return json({error:"Internal server error",detail:err?.message||String(err)},500,cors)}
+  }catch(err){
+    const status=err?.status||500;
+    return json({error:status===500?"Internal server error":err.message,detail:status===500?(err?.message||String(err)):undefined},status,cors)
+  }
  }
 };
 
@@ -169,29 +291,51 @@ function randomCode(n){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";const b=new Ui
 function safeExt(v,fallback){const e=String(v||"").toLowerCase().replace(/[^a-z0-9]/g,"");return e&&e.length<=8?e:fallback}
 function clean(v,max){return String(v??"").trim().slice(0,max)}
 function validateDraft(b){
- if(!["classic-black","natural-oak","gallery-white"].includes(b.frame_variant))throw new Error("Invalid frame selection");
- if(!["8x10","12x16"].includes(b.frame_size))throw new Error("Invalid frame size");
- if(!b.photo||!b.video)throw new Error("Photo and video are required");
- if(Number(b.photo.size)>20*1024*1024)throw new Error("Photo is too large");
- if(Number(b.video.size)>100*1024*1024)throw new Error("Video is too large");
+ if(!["classic-black","natural-oak","gallery-white"].includes(b.frame_variant))throw httpError(400,"Invalid frame selection");
+ if(!["8x10","12x16"].includes(b.frame_size))throw httpError(400,"Invalid frame size");
+ if(!b.photo||!b.video)throw httpError(400,"Photo and video are required");
+ if(Number(b.photo.size)>20*1024*1024)throw httpError(400,"Photo is too large");
+ if(Number(b.video.size)>100*1024*1024)throw httpError(400,"Video is too large");
 }
 function validateDelivery(b){
  for(const k of ["customer_name","customer_email","phone","address_line1","city","state","postal_code","country"])
-   if(!clean(b[k],240))throw new Error(`Missing ${k}`);
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.customer_email)))throw new Error("Invalid email");
+   if(!clean(b[k],240))throw httpError(400,`Missing ${k}`);
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.customer_email)))throw httpError(400,"Invalid email");
+}
+function httpError(status,message){const e=new Error(message);e.status=status;return e}
+function serverPrice(variant,size,env){
+ // TEST defaults only. Override with Worker variables before production.
+ const p8=Number(env.FRAME_PRICE_8X10_PAISE||100);
+ const p12=Number(env.FRAME_PRICE_12X16_PAISE||200);
+ if(!["classic-black","natural-oak","gallery-white"].includes(variant))return null;
+ if(size==="8x10")return p8;
+ if(size==="12x16")return p12;
+ return null;
+}
+function assertRazorpayConfigured(env){
+ if(!env.RAZORPAY_KEY_ID||!env.RAZORPAY_KEY_SECRET)throw httpError(500,"Razorpay keys are not configured");
+ if(env.ALLOW_LIVE_PAYMENTS!=="true"&&!String(env.RAZORPAY_KEY_ID).startsWith("rzp_test_"))
+   throw httpError(500,"Live Razorpay keys are blocked. Use test keys or explicitly enable live payments.");
 }
 async function rest(env,table,method,body,prefer){
  return fetch(`${env.SUPABASE_URL}/rest/v1/${table}`,{method,headers:{...svc(env),"Content-Type":"application/json","Prefer":prefer},body:JSON.stringify(body)});
+}
+async function patchOrder(env,id,patch){
+ return fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...svc(env),"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({...patch,updated_at:new Date().toISOString()})});
+}
+async function patchFrame(env,id,patch){
+ return fetch(`${env.SUPABASE_URL}/rest/v1/frames?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...svc(env),"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({...patch,updated_at:new Date().toISOString()})});
 }
 async function createSignedUpload(env,bucket,path){
  const encoded=path.split("/").map(encodeURIComponent).join("/");
  const r=await fetch(`${env.SUPABASE_URL}/storage/v1/object/upload/sign/${encodeURIComponent(bucket)}/${encoded}`,{
    method:"POST",headers:{...svc(env),"Content-Type":"application/json"},body:"{}"
  });
- if(!r.ok)return null;const d=await r.json();
- if(d.url){return d.url.startsWith("http")?d.url:`${env.SUPABASE_URL}/storage/v1${d.url}`}
- if(d.signedURL)return d.signedURL.startsWith("http")?d.signedURL:`${env.SUPABASE_URL}/storage/v1${d.signedURL}`;
- return null;
+ if(!r.ok)return null;
+ const d=await r.json();
+ const raw=d.url||d.signedURL||d.signedUrl;
+ if(!raw)return null;
+ return raw.startsWith("http")?raw:`${env.SUPABASE_URL}/storage/v1${raw}`;
 }
 async function requireOrderToken(env,id,token){
  if(!token)return{ok:false,status:401,error:"Missing order token"};
@@ -200,11 +344,51 @@ async function requireOrderToken(env,id,token){
  const rows=await r.json();if(!rows?.length)return{ok:false,status:403,error:"Invalid order token"};
  return{ok:true,data:rows[0]};
 }
-async function patchOrder(env,id,patch){
- return fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...svc(env),"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({...patch,updated_at:new Date().toISOString()})});
+async function razorpay(env,path,method,body){
+ const auth=btoa(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`);
+ const init={method,headers:{"Authorization":`Basic ${auth}`,"Content-Type":"application/json"}};
+ if(body!==undefined)init.body=JSON.stringify(body);
+ return fetch(`https://api.razorpay.com${path}`,init);
 }
-async function patchFrame(env,id,patch){
- return fetch(`${env.SUPABASE_URL}/rest/v1/frames?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...svc(env),"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({...patch,updated_at:new Date().toISOString()})});
+async function hmacHex(secret,message){
+ const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const sig=await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(message));
+ return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function timingSafeEqual(a,b){
+ a=String(a||"").toLowerCase();b=String(b||"").toLowerCase();
+ if(a.length!==b.length)return false;
+ let out=0;for(let i=0;i<a.length;i++)out|=a.charCodeAt(i)^b.charCodeAt(i);
+ return out===0;
+}
+async function markOrderPaid(env,o,paymentId){
+ if(o.payment_status==="paid"&&o.frame_id)return;
+
+ let frameId=o.frame_id||null;
+ if(!frameId){
+   const frameRow={
+     frame_code:o.frame_code,
+     title:`Living Frame ${o.order_number}`,
+     status:"awaiting_ar_setup",
+     customer_id:o.customer_id,
+     customer_name:o.customer_name,
+     customer_email:o.customer_email,
+     photo_path:o.photo_path,
+     video_path:o.video_path,
+     created_at:o.created_at
+   };
+   const fi=await rest(env,"frames","POST",frameRow,"return=representation");
+   if(!fi.ok)throw new Error(`Could not create paid frame: ${await fi.text()}`);
+   const rows=await fi.json();frameId=rows?.[0]?.id||null;
+ }
+
+ await patchOrder(env,o.id,{
+   frame_id:frameId,
+   razorpay_payment_id:paymentId,
+   payment_status:"paid",
+   status:"paid",
+   paid_at:new Date().toISOString()
+ });
 }
 async function requireUser(request,env){
  const auth=request.headers.get("Authorization")||"",m=auth.match(/^Bearer\s+(.+)$/i);if(!m)return{ok:false,status:401,error:"Missing bearer token"};

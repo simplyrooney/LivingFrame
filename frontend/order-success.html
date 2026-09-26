@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Order confirmed · Living Frame</title>
+<link rel="stylesheet" href="./assets/css/order.css">
+</head>
+<body>
+<header class="site-nav shell"><a class="brand" href="./">Living Frame</a><span class="checkout-step">Order confirmation</span></header>
+
+<main class="center-page shell">
+  <div class="payment-card success-card">
+    <div class="success-mark">✓</div>
+    <p class="eyebrow">ORDER RECEIVED</p>
+    <h1 class="checkout-title">Your memory is in our hands.</h1>
+    <p id="successIntro" class="lead-small">We’re confirming your payment and preparing your order.</p>
+
+    <div class="payment-summary">
+      <div class="summary-row"><span>Order</span><b id="sOrder">—</b></div>
+      <div class="summary-row"><span>Customer ID</span><b id="sCustomer">—</b></div>
+      <div class="summary-row"><span>Frame code</span><b id="sFrameCode">—</b></div>
+      <div class="summary-row"><span>Frame</span><b id="sFrame">—</b></div>
+      <div class="summary-row"><span>Size</span><b id="sSize">—</b></div>
+      <div class="summary-row"><span>Payment</span><b id="sPayment">Checking…</b></div>
+      <div class="summary-row"><span>Order status</span><b id="sStatus">Checking…</b></div>
+    </div>
+
+    <p id="successState" class="muted"></p>
+    <p id="successError" class="error"></p>
+    <a class="btn secondary full" href="./">Back to home</a>
+  </div>
+</main>
+<script src="./assets/js/order-success.js"></script>
+</body>
+</html>

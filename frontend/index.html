@@ -1,69 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#111111" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
   <title>Living Frame</title>
-  <meta name="description" content="Turn a printed photo into a living memory." />
-  <link rel="stylesheet" href="./assets/css/styles.css" />
+  <link rel="stylesheet" href="./assets/css/order.css">
 </head>
 <body>
-  <header class="nav shell">
-    <a class="logo" href="./">Living Frame</a>
-    <nav>
-      <a href="#how">How it works</a>
-      <a href="#create">Create</a>
-      <a href="./ar-viewer.html?frame=LF-6CSUU7EZ">Test AR</a>
-    </nav>
-  </header>
+<header class="site-nav shell">
+  <a class="brand" href="./">Living Frame</a>
+  <nav><a href="#how">How it works</a><a href="#create">Create yours</a></nav>
+</header>
 
-  <main>
-    <section class="hero shell">
+<main>
+<section class="hero shell">
+  <div>
+    <p class="eyebrow">PRINTED MEMORY · AUGMENTED</p>
+    <h1>Turn a photo into a <em>living memory.</em></h1>
+    <p class="lead">Upload your favorite photo and video, choose your frame, and we’ll prepare the AR experience by hand.</p>
+    <a class="btn primary" href="#create">Create your Living Frame</a>
+  </div>
+  <div class="hero-frame"><div class="hero-photo">Your memory<br><span>comes alive</span></div></div>
+</section>
+
+<section id="how" class="section shell">
+  <p class="eyebrow">HOW IT WORKS</p>
+  <div class="steps">
+    <article><b>01</b><h3>Upload</h3><p>Choose one photo and the video that belongs with it.</p></article>
+    <article><b>02</b><h3>Choose frame</h3><p>Pick the frame style and size that suits your memory.</p></article>
+    <article><b>03</b><h3>We prepare it</h3><p>We manually align the AR video so your important moments stay in view.</p></article>
+    <article><b>04</b><h3>Scan & relive</h3><p>Point your phone at the printed photo and watch it come alive.</p></article>
+  </div>
+</section>
+
+<section id="create" class="section shell">
+  <div class="order-card">
+    <div class="section-title">
+      <p class="eyebrow">CREATE YOUR FRAME</p>
+      <h2>Start with your memory.</h2>
+      <p>Original files are kept unchanged. No automatic cropping.</p>
+    </div>
+
+    <div class="upload-grid">
+      <label class="upload-box" id="photoBox">
+        <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <span class="upload-icon">＋</span>
+        <strong>Upload photo</strong>
+        <small>JPG, PNG or WebP · up to 20 MB</small>
+        <span id="photoName" class="filename"></span>
+      </label>
+
+      <label class="upload-box" id="videoBox">
+        <input id="videoInput" type="file" accept="video/mp4,video/quicktime,video/webm" hidden>
+        <span class="upload-icon">▶</span>
+        <strong>Upload video</strong>
+        <small>MP4, MOV or WebM · up to 100 MB</small>
+        <span id="videoName" class="filename"></span>
+      </label>
+    </div>
+
+    <div class="chooser">
+      <h3>Choose your frame</h3>
+      <div class="frame-options" id="frameOptions">
+        <button class="frame-option selected" data-value="classic-black"><span class="swatch black"></span><b>Classic Black</b><small>Minimal & timeless</small></button>
+        <button class="frame-option" data-value="natural-oak"><span class="swatch oak"></span><b>Natural Oak</b><small>Warm & organic</small></button>
+        <button class="frame-option" data-value="gallery-white"><span class="swatch white"></span><b>Gallery White</b><small>Clean & modern</small></button>
+      </div>
+    </div>
+
+    <div class="chooser">
+      <h3>Choose size</h3>
+      <div class="size-options" id="sizeOptions">
+        <button class="size-option selected" data-value="8x10"><b>8 × 10</b><small>inches</small></button>
+        <button class="size-option" data-value="12x16"><b>12 × 16</b><small>inches</small></button>
+      </div>
+    </div>
+
+    <div class="order-footer">
       <div>
-        <p class="eyebrow">PRINTED MEMORY · AUGMENTED</p>
-        <h1>Photos that<br><em>come alive.</em></h1>
-        <p class="lead">Upload a photo and a matching video. We prepare the AR experience, print the exact target image, and deliver your Living Frame.</p>
-        <a class="button primary" href="#create">Create your frame</a>
+        <small>Next</small>
+        <strong>Delivery details</strong>
       </div>
-      <div class="frame-demo">
-        <div class="photo-card">
-          <div class="photo-placeholder">Your photo</div>
-          <div class="play">▶</div>
-        </div>
-      </div>
-    </section>
+      <button id="orderBtn" class="btn primary" type="button">Order this frame →</button>
+    </div>
+    <div id="progressWrap" class="progress-wrap hidden"><div id="progressBar"></div><span id="progressText">Preparing order…</span></div>
+    <p id="orderError" class="error"></p>
+  </div>
+</section>
+</main>
 
-    <section id="how" class="section shell">
-      <p class="eyebrow">HOW IT WORKS</p>
-      <h2>Simple for the customer.<br>Carefully prepared by us.</h2>
-      <div class="steps">
-        <article><span>01</span><h3>Upload</h3><p>Send the original photo and video. We keep both unchanged.</p></article>
-        <article><span>02</span><h3>We configure AR</h3><p>We manually align the video in MyWebAR so important parts are not cropped unexpectedly.</p></article>
-        <article><span>03</span><h3>We print</h3><p>The exact tracking image is printed and framed.</p></article>
-        <article><span>04</span><h3>Scan & relive</h3><p>Open the Living Frame viewer and point the camera at the printed photo.</p></article>
-      </div>
-    </section>
-
-    <section id="create" class="section shell">
-      <div class="create-card">
-        <div>
-          <p class="eyebrow">CREATE A LIVING FRAME</p>
-          <h2>Upload your memory</h2>
-          <p>This MVP keeps your originals unchanged. Upload integration can be connected to the Cloudflare Worker endpoints in the next backend step.</p>
-        </div>
-        <form id="demoForm">
-          <label>Photo<input type="file" accept="image/*" required></label>
-          <label>Video<input type="file" accept="video/*" required></label>
-          <button class="button primary" type="submit">Continue</button>
-          <p class="form-note" id="formNote"></p>
-        </form>
-      </div>
-    </section>
-  </main>
-
-  <footer class="shell">Living Frame · Cloudflare + Supabase + MyWebAR</footer>
-
-  <script src="./assets/js/app.js"></script>
+<script src="./assets/js/order.js"></script>
 </body>
 </html>
