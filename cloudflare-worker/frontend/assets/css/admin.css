@@ -8,3 +8,48 @@ main{width:min(1180px,calc(100% - 32px));margin:auto}.login-wrap{min-height:calc
 .asset-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}.asset{text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#f8f6f1;min-height:250px;position:relative;display:grid;place-items:center}.asset-label{position:absolute;top:12px;left:12px;background:#111;color:#fff;border-radius:999px;padding:6px 8px;font-size:10px;font-weight:900;z-index:2}.photo-preview{width:100%;height:250px;object-fit:contain;background:#eee}.video-box{font-size:46px}.asset-action{position:absolute;bottom:10px;right:10px;background:#fffffff0;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:850}.asset.disabled{pointer-events:none;opacity:.45}
 .editor{display:grid;grid-template-columns:1fr 220px;gap:14px;border-top:1px solid var(--line);padding-top:20px}.notes-wrap,.editor-actions{grid-column:1/-1}.editor-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ghost-link{text-decoration:none;color:#171717;border:1px solid var(--line);border-radius:999px;padding:11px 15px;font-weight:800;font-size:13px}.save-state{font-size:12px;color:#237a45}.empty{text-align:center;color:var(--muted);padding:70px}
 @media(max-width:760px){h1{font-size:40px}.stats{grid-template-columns:1fr 1fr}.toolbar,.asset-grid,.editor{grid-template-columns:1fr}.order-head,.page-head{align-items:flex-start;flex-direction:column}}
+
+
+// Replace ONLY the existing GET /api/admin/frames route with this version.
+// It returns the frame fulfilment data plus its linked paid order.
+
+if(request.method==="GET"&&url.pathname==="/api/admin/frames"){
+  const admin=await requireAdmin(request,env);
+  if(!admin.ok)return json({error:admin.error},admin.status,cors);
+
+  const fr=await fetch(
+    `${env.SUPABASE_URL}/rest/v1/frames?select=id,frame_code,user_id,customer_id,title,status,photo_path,video_path,ar_provider,ar_target_id,ar_experience_url,customer_name,customer_email,admin_notes,created_at,updated_at&order=created_at.desc`,
+    {headers:svc(env)}
+  );
+
+  if(!fr.ok)
+    return json({error:"Could not load frames",detail:await fr.text()},500,cors);
+
+  const frameRows=await fr.json();
+
+  // Fetch orders once and map them by frame_id.
+  // For MVP volumes this is simple and reliable. We can paginate later if needed.
+  const or=await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?select=id,frame_id,order_number,customer_id,frame_code,status,payment_status,frame_variant,frame_size,price_paise,currency,customer_name,customer_email,phone,address_line1,address_line2,city,state,postal_code,country,razorpay_order_id,razorpay_payment_id,paid_at,created_at,updated_at&payment_status=eq.paid&order=created_at.desc`,
+    {headers:svc(env)}
+  );
+
+  if(!or.ok)
+    return json({error:"Could not load paid orders",detail:await or.text()},500,cors);
+
+  const orderRows=await or.json();
+  const byFrame=new Map(orderRows.filter(o=>o.frame_id).map(o=>[o.frame_id,o]));
+
+  const frames=await Promise.all(frameRows.map(async f=>({
+    ...f,
+    order:byFrame.get(f.id)||null,
+    photo_url:f.photo_path
+      ? await sign(env,env.PHOTO_BUCKET||"living-frame-photos",f.photo_path)
+      : null,
+    video_url:f.video_path
+      ? await sign(env,env.VIDEO_BUCKET||"living-frame-videos",f.video_path)
+      : null
+  })));
+
+  return json({frames},200,cors);
+}
