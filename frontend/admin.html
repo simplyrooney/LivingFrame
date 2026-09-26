@@ -10,13 +10,11 @@
   <div><div class="brand">Living Frame</div><div class="sub">Admin Console</div></div>
   <div class="top-actions"><span id="adminIdentity"></span><button id="logoutBtn" class="ghost hidden">Sign out</button></div>
 </header>
-
 <main>
 <section id="loginView" class="login-wrap">
   <div class="login-card">
-    <p class="eyebrow">ADMIN ACCESS</p>
-    <h1>Manage Living Frames</h1>
-    <p class="muted">Sign in with the Supabase account configured as administrator.</p>
+    <p class="eyebrow">ADMIN ACCESS</p><h1>Manage Living Frames</h1>
+    <p class="muted">Sign in with the configured Supabase admin account.</p>
     <form id="loginForm">
       <label>Email<input id="email" type="email" required></label>
       <label>Password<input id="password" type="password" required></label>
@@ -32,11 +30,9 @@
     <p class="muted">Review originals, configure MyWebAR, then print and ship.</p></div>
     <button id="refreshBtn" class="ghost">Refresh</button>
   </div>
-
   <div id="stats" class="stats"></div>
-
   <div class="toolbar">
-    <input id="searchInput" type="search" placeholder="Search frame code, title, customer…">
+    <input id="searchInput" type="search" placeholder="Search frame code, customer ID, title, customer…">
     <select id="statusFilter">
       <option value="">All statuses</option>
       <option>draft</option><option>assets_uploaded</option><option>awaiting_ar_setup</option>
@@ -44,7 +40,6 @@
       <option>shipped</option><option>ready</option><option>failed</option><option>archived</option>
     </select>
   </div>
-
   <div id="orders" class="orders"></div>
   <div id="emptyState" class="empty hidden">No matching frames.</div>
 </section>
@@ -58,14 +53,21 @@
   </div>
 
   <div class="asset-grid">
-    <a class="asset photo-link" target="_blank" rel="noopener">
-      <div class="asset-label">PHOTO</div><img class="photo-preview" alt="Frame photo">
-      <div class="asset-action">Open original ↗</div>
-    </a>
-    <a class="asset video-link" target="_blank" rel="noopener">
+    <div class="asset photo-asset">
+      <div class="asset-label">PHOTO</div>
+      <img class="photo-preview" alt="Frame photo">
+      <div class="asset-actions">
+        <a class="open-photo ghost-link" target="_blank" rel="noopener">View ↗</a>
+        <button class="download-photo primary small-btn">Download Photo</button>
+      </div>
+    </div>
+    <div class="asset video-asset">
       <div class="asset-label">VIDEO</div><div class="video-box">▶</div>
-      <div class="asset-action">Open original ↗</div>
-    </a>
+      <div class="asset-actions">
+        <a class="open-video ghost-link" target="_blank" rel="noopener">View ↗</a>
+        <button class="download-video primary small-btn">Download Video</button>
+      </div>
+    </div>
   </div>
 
   <div class="editor">
@@ -86,6 +88,5 @@
   </div>
 </article>
 </template>
-
 <script src="./assets/js/admin.js"></script>
 </body></html>
