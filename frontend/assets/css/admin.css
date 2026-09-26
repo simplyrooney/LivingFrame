@@ -1,10 +1,24 @@
+/* Equal-size aligned asset buttons */
+.asset-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
 
-:root{--bg:#f4f1ea;--card:#fff;--ink:#171717;--muted:#746f67;--line:#ddd7cd;--accent:#ff6b4a;--danger:#b42318}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
-button,input,select,textarea{font:inherit}.hidden{display:none!important}.topbar{height:72px;padding:0 max(24px,calc((100vw - 1180px)/2));display:flex;align-items:center;justify-content:space-between;background:#111;color:white}.brand{font-weight:900;font-size:19px}.sub{font-size:11px;color:#999;letter-spacing:.14em}.top-actions{display:flex;align-items:center;gap:12px;font-size:13px}
-main{width:min(1180px,calc(100% - 32px));margin:auto}.login-wrap{min-height:calc(100vh - 72px);display:grid;place-items:center}.login-card{width:min(430px,100%);background:white;border:1px solid var(--line);border-radius:24px;padding:34px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.18em;color:var(--muted)}h1,h2{font-family:Georgia,serif;font-weight:500;letter-spacing:-.03em}h1{font-size:48px;line-height:.95;margin:10px 0 16px}.muted{color:var(--muted);line-height:1.55}.login-card form{display:grid;gap:15px;margin-top:26px}label{display:grid;gap:7px;font-size:12px;font-weight:800}input,select,textarea{width:100%;border:1px solid var(--line);background:#fbfaf7;border-radius:12px;padding:12px 13px}.primary,.ghost{border:0;border-radius:999px;padding:12px 17px;font-weight:850;cursor:pointer}.primary{background:#171717;color:white}.ghost{background:#fff;color:#171717;border:1px solid var(--line)}.error{color:var(--danger);font-size:13px;margin:0}
-.dashboard{padding:56px 0 90px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.page-head h1{margin:8px 0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:28px 0}.stat{background:white;border:1px solid var(--line);border-radius:18px;padding:18px}.stat b{display:block;font-family:Georgia,serif;font-size:32px;font-weight:500}.stat span{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.08em}
-.toolbar{display:grid;grid-template-columns:1fr 220px;gap:12px;margin:22px 0}.orders{display:grid;gap:18px}.order-card{background:white;border:1px solid var(--line);border-radius:24px;padding:24px}.order-head{display:flex;justify-content:space-between;gap:20px}.frame-code{font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--accent)}.frame-title{font-size:30px;margin:6px 0}.order-meta{font-size:12px;color:var(--muted)}.status-pill{height:max-content;border-radius:999px;background:#f2efe8;padding:8px 11px;font-size:11px;font-weight:900}
-.asset-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}.asset{text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#f8f6f1;min-height:250px;position:relative;display:grid;place-items:center}.asset-label{position:absolute;top:12px;left:12px;background:#111;color:#fff;border-radius:999px;padding:6px 8px;font-size:10px;font-weight:900;z-index:2}.photo-preview{width:100%;height:250px;object-fit:contain;background:#eee}.video-box{font-size:46px}.asset-action{position:absolute;bottom:10px;right:10px;background:#fffffff0;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:850}.asset.disabled{pointer-events:none;opacity:.45}
-.editor{display:grid;grid-template-columns:1fr 220px;gap:14px;border-top:1px solid var(--line);padding-top:20px}.notes-wrap,.editor-actions{grid-column:1/-1}.editor-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ghost-link{text-decoration:none;color:#171717;border:1px solid var(--line);border-radius:999px;padding:11px 15px;font-weight:800;font-size:13px}.save-state{font-size:12px;color:#237a45}.empty{text-align:center;color:var(--muted);padding:70px}
-@media(max-width:760px){h1{font-size:40px}.stats{grid-template-columns:1fr 1fr}.toolbar,.asset-grid,.editor{grid-template-columns:1fr}.order-head,.page-head{align-items:flex-start;flex-direction:column}}
+.asset-actions .ghost-link,
+.asset-actions .small-btn {
+  width: 150px;
+  height: 44px;
+  padding: 0 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
