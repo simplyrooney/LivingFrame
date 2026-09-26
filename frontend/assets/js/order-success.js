@@ -4,7 +4,18 @@ const order=JSON.parse(sessionStorage.getItem("lf_order")||"null");
 const state=document.getElementById("successState");
 const error=document.getElementById("successError");
 
-if(!order?.order_id||!order?.order_token) location.href="./";
+if(!order?.order_id||!order?.order_token){
+  location.href="./";
+}
+
+function money(paise){
+  if(paise===null||paise===undefined) return "—";
+  return new Intl.NumberFormat("en-IN",{
+    style:"currency",
+    currency:"INR",
+    minimumFractionDigits:2
+  }).format(Number(paise)/100);
+}
 
 async function getStatus(){
   const r=await fetch(`${API}/api/public/orders/${encodeURIComponent(order.order_id)}/status`,{
@@ -23,28 +34,34 @@ function render(d){
   document.getElementById("sFrameCode").textContent=d.frame_code||order.frame_code||"—";
   document.getElementById("sFrame").textContent=(d.frame_variant||order.frame_variant||"").replace(/-/g," ");
   document.getElementById("sSize").textContent=d.frame_size||order.frame_size||"—";
-  document.getElementById("sPayment").textContent=d.payment_status||"pending";
-  document.getElementById("sStatus").textContent=d.status||"pending";
+  document.getElementById("sPrice").textContent=money(d.price_paise ?? order.price_paise);
+  document.getElementById("sPayment").textContent=d.payment_status||order.payment_status||"—";
+  document.getElementById("sStatus").textContent=d.status||order.status||"—";
+
+  const heading=document.getElementById("orderHeading");
+  heading.textContent=d.order_number||order.order_number||"Your order";
 
   if(d.payment_status==="paid"){
-    document.getElementById("successIntro").textContent="Payment confirmed. Your order is now in our fulfilment queue.";
-    state.textContent="We’ll prepare the AR experience, print the target photo, frame it and ship it.";
+    state.textContent="Payment confirmed. Your order is now in the fulfilment queue.";
   }else if(d.payment_status==="processing"){
-    document.getElementById("successIntro").textContent="Your payment was received and is still being confirmed.";
-    state.textContent="This page will check again automatically.";
+    state.textContent="Payment received. Final confirmation is still processing.";
   }else{
-    document.getElementById("successIntro").textContent="Your order is saved, but payment is not yet confirmed.";
-    state.textContent="If you completed payment, confirmation may take a moment.";
+    state.textContent="Your order is saved. Payment confirmation is still pending.";
   }
 }
 
 let tries=0;
 async function poll(){
   try{
-    const d=await getStatus();render(d);
-    if(d.payment_status!=="paid"&&tries<8){
-      tries++;setTimeout(poll,2500);
+    const d=await getStatus();
+    render(d);
+
+    if(d.payment_status!=="paid" && tries<10){
+      tries++;
+      setTimeout(poll,2500);
     }
-  }catch(e){error.textContent=e.message}
+  }catch(e){
+    error.textContent=e.message;
+  }
 }
 poll();

@@ -185,10 +185,18 @@ export default{
     if(!order.ok)return json({error:order.error},order.status,cors);
     const o=order.data;
     return json({
-      order_number:o.order_number,customer_id:o.customer_id,frame_code:o.frame_code,
-      frame_variant:o.frame_variant,frame_size:o.frame_size,
-      payment_status:o.payment_status,status:o.status
-    },200,cors);
+  order_number:o.order_number,
+  customer_id:o.customer_id,
+  frame_code:o.frame_code,
+  frame_variant:o.frame_variant,
+  frame_size:o.frame_size,
+
+  price_paise:o.price_paise,
+  currency:o.currency || "INR",
+
+  payment_status:o.payment_status,
+  status:o.status
+},200,cors);
    }
 
    // Razorpay webhook: raw-body HMAC verification.

@@ -6,30 +6,61 @@
 <link rel="stylesheet" href="./assets/css/order.css">
 </head>
 <body>
-<header class="site-nav shell"><a class="brand" href="./">Living Frame</a><span class="checkout-step">Order confirmation</span></header>
+<header class="site-nav shell">
+  <a class="brand" href="./">Living Frame</a>
+  <span class="checkout-step">Order confirmed</span>
+</header>
 
-<main class="center-page shell">
-  <div class="payment-card success-card">
-    <div class="success-mark">✓</div>
-    <p class="eyebrow">ORDER RECEIVED</p>
-    <h1 class="checkout-title">Your memory is in our hands.</h1>
-    <p id="successIntro" class="lead-small">We’re confirming your payment and preparing your order.</p>
+<main class="success-page shell">
+  <section class="success-panel">
+    <div class="success-icon">✓</div>
+    <p class="eyebrow">PAYMENT SUCCESSFUL</p>
+    <h1>Congratulations!</h1>
+    <p class="success-lead">Your Living Frame order has been successfully completed.</p>
 
-    <div class="payment-summary">
-      <div class="summary-row"><span>Order</span><b id="sOrder">—</b></div>
-      <div class="summary-row"><span>Customer ID</span><b id="sCustomer">—</b></div>
-      <div class="summary-row"><span>Frame code</span><b id="sFrameCode">—</b></div>
-      <div class="summary-row"><span>Frame</span><b id="sFrame">—</b></div>
-      <div class="summary-row"><span>Size</span><b id="sSize">—</b></div>
-      <div class="summary-row"><span>Payment</span><b id="sPayment">Checking…</b></div>
-      <div class="summary-row"><span>Order status</span><b id="sStatus">Checking…</b></div>
+    <div class="success-message">
+      We’ve received your order and payment. Your photo and video are now in our fulfilment queue.
+      We’ll prepare the AR experience, print the exact target image, frame it and ship it to you.
+    </div>
+
+    <div class="order-details-card">
+      <div class="details-head">
+        <div>
+          <p class="eyebrow">ORDER DETAILS</p>
+          <h2 id="orderHeading">Your order</h2>
+        </div>
+        <span class="paid-pill">PAID ✓</span>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-item"><span>Order ID</span><strong id="sOrder">—</strong></div>
+        <div class="detail-item"><span>Customer ID</span><strong id="sCustomer">—</strong></div>
+        <div class="detail-item"><span>Frame Code</span><strong id="sFrameCode">—</strong></div>
+        <div class="detail-item"><span>Frame</span><strong id="sFrame">—</strong></div>
+        <div class="detail-item"><span>Size</span><strong id="sSize">—</strong></div>
+        <div class="detail-item"><span>Price</span><strong id="sPrice">—</strong></div>
+        <div class="detail-item"><span>Payment Status</span><strong id="sPayment">—</strong></div>
+        <div class="detail-item"><span>Order Status</span><strong id="sStatus">—</strong></div>
+      </div>
+    </div>
+
+    <div class="what-next">
+      <p class="eyebrow">WHAT HAPPENS NEXT</p>
+      <div class="next-steps">
+        <div><b>01</b><span>AR setup</span></div>
+        <div><b>02</b><span>Print & frame</span></div>
+        <div><b>03</b><span>Quality check</span></div>
+        <div><b>04</b><span>Ship</span></div>
+      </div>
     </div>
 
     <p id="successState" class="muted"></p>
     <p id="successError" class="error"></p>
-    <a class="btn secondary full" href="./">Back to home</a>
-  </div>
+
+    <a class="btn primary full" href="./">Back to Living Frame</a>
+  </section>
 </main>
+
 <script src="./assets/js/order-success.js"></script>
 </body>
 </html>
