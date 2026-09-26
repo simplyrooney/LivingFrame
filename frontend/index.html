@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Living Frame</title>
+  <meta name="description" content="Turn a printed photo into a living memory." />
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+</head>
+<body>
+  <header class="nav shell">
+    <a class="logo" href="./">Living Frame</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#create">Create</a>
+      <a href="./ar-viewer.html?frame=LF-6CSUU7EZ">Test AR</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div>
+        <p class="eyebrow">PRINTED MEMORY · AUGMENTED</p>
+        <h1>Photos that<br><em>come alive.</em></h1>
+        <p class="lead">Upload a photo and a matching video. We prepare the AR experience, print the exact target image, and deliver your Living Frame.</p>
+        <a class="button primary" href="#create">Create your frame</a>
+      </div>
+      <div class="frame-demo">
+        <div class="photo-card">
+          <div class="photo-placeholder">Your photo</div>
+          <div class="play">▶</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="section shell">
+      <p class="eyebrow">HOW IT WORKS</p>
+      <h2>Simple for the customer.<br>Carefully prepared by us.</h2>
+      <div class="steps">
+        <article><span>01</span><h3>Upload</h3><p>Send the original photo and video. We keep both unchanged.</p></article>
+        <article><span>02</span><h3>We configure AR</h3><p>We manually align the video in MyWebAR so important parts are not cropped unexpectedly.</p></article>
+        <article><span>03</span><h3>We print</h3><p>The exact tracking image is printed and framed.</p></article>
+        <article><span>04</span><h3>Scan & relive</h3><p>Open the Living Frame viewer and point the camera at the printed photo.</p></article>
+      </div>
+    </section>
+
+    <section id="create" class="section shell">
+      <div class="create-card">
+        <div>
+          <p class="eyebrow">CREATE A LIVING FRAME</p>
+          <h2>Upload your memory</h2>
+          <p>This MVP keeps your originals unchanged. Upload integration can be connected to the Cloudflare Worker endpoints in the next backend step.</p>
+        </div>
+        <form id="demoForm">
+          <label>Photo<input type="file" accept="image/*" required></label>
+          <label>Video<input type="file" accept="video/*" required></label>
+          <button class="button primary" type="submit">Continue</button>
+          <p class="form-note" id="formNote"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">Living Frame · Cloudflare + Supabase + MyWebAR</footer>
+
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>

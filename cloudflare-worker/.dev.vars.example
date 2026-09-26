@@ -1,0 +1,2 @@
+SUPABASE_ANON_KEY=your_publishable_or_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_secret_backend_key

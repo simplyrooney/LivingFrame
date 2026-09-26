@@ -1,0 +1,7 @@
+name = "living-frame-backend"
+main = "src/index.js"
+compatibility_date = "2026-09-26"
+
+[vars]
+FRONTEND_ORIGIN = "https://YOUR-PAGES-SITE.pages.dev"
+SUPABASE_URL = "https://wmewylplpsyomqrahiwe.supabase.co"
