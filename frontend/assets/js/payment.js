@@ -15,6 +15,8 @@ document.getElementById("paymentFrame").textContent=(order.frame_variant||"").re
 document.getElementById("paymentSize").textContent=order.frame_size||"—";
 
 let paymentConfig=null;
+let paymentInProgress=false;
+let verificationInProgress=false;
 
 async function post(path,body){
   const r=await fetch(`${API}${path}`,{
@@ -23,20 +25,54 @@ async function post(path,body){
     body:JSON.stringify(body)
   });
   let d={};try{d=await r.json()}catch{}
-  if(!r.ok) throw new Error(d.error||d.detail||`Request failed (${r.status})`);
-  return d;
+  if(!r.ok && r.status!==202){
+    throw new Error(d.error||d.detail||`Request failed (${r.status})`);
+  }
+  return {status:r.status,data:d};
 }
 
 function money(paise){
-  return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format((paise||0)/100);
+  return new Intl.NumberFormat("en-IN",{
+    style:"currency",
+    currency:"INR",
+    minimumFractionDigits:2
+  }).format((paise||0)/100);
+}
+
+function setVerifyingUI(){
+  verificationInProgress=true;
+  paymentInProgress=false;
+  payBtn.disabled=true;
+  payBtn.textContent="Payment received — verifying…";
+  payBtn.style.opacity=".65";
+  payBtn.style.cursor="not-allowed";
+  state.textContent="Verifying payment…";
+  error.textContent="";
+}
+
+function setPaidUI(){
+  payBtn.disabled=true;
+  payBtn.textContent="Payment successful ✓";
+  payBtn.style.opacity=".65";
+  payBtn.style.cursor="not-allowed";
+  state.textContent="Payment confirmed. Opening your order…";
+}
+
+async function checkOrderStatus(){
+  const {data}=await post(`/api/public/orders/${encodeURIComponent(order.order_id)}/status`,{
+    order_token:order.order_token
+  });
+  return data;
 }
 
 async function prepare(){
+  if(verificationInProgress) return;
   payBtn.disabled=true;
   state.textContent="Preparing secure payment…";
-  paymentConfig=await post(`/api/public/orders/${encodeURIComponent(order.order_id)}/payment/create`,{
+  const {data}=await post(`/api/public/orders/${encodeURIComponent(order.order_id)}/payment/create`,{
     order_token:order.order_token
   });
+  paymentConfig=data;
   document.getElementById("paymentAmount").textContent=money(paymentConfig.amount);
   payBtn.textContent=`Pay ${money(paymentConfig.amount)}`;
   payBtn.disabled=false;
@@ -44,26 +80,85 @@ async function prepare(){
 }
 
 async function verify(response){
-  state.textContent="Verifying payment…";
-  const result=await post(`/api/public/orders/${encodeURIComponent(order.order_id)}/payment/verify`,{
-    order_token:order.order_token,
-    razorpay_order_id:response.razorpay_order_id,
-    razorpay_payment_id:response.razorpay_payment_id,
-    razorpay_signature:response.razorpay_signature
-  });
+  if(verificationInProgress) return;
+  setVerifyingUI();
 
-  sessionStorage.setItem("lf_order",JSON.stringify({
-    ...order,
-    payment_status:result.payment_status,
-    status:result.status
-  }));
+  try{
+    const {data:result}=await post(`/api/public/orders/${encodeURIComponent(order.order_id)}/payment/verify`,{
+      order_token:order.order_token,
+      razorpay_order_id:response.razorpay_order_id,
+      razorpay_payment_id:response.razorpay_payment_id,
+      razorpay_signature:response.razorpay_signature
+    });
 
-  location.href="./order-success.html";
+    sessionStorage.setItem("lf_order",JSON.stringify({
+      ...order,
+      payment_status:result.payment_status,
+      status:result.status
+    }));
+
+    if(result.payment_status==="paid"){
+      setPaidUI();
+    }else{
+      state.textContent="Payment received. Final confirmation is processing…";
+      payBtn.textContent="Payment received ✓";
+    }
+
+    // Always move to confirmation page. It polls the backend if capture is delayed.
+    setTimeout(()=>{ location.href="./order-success.html"; },350);
+  }catch(e){
+    // Payment may already be successful even if the browser verification request
+    // was interrupted. Re-check the order before showing Pay again.
+    try{
+      const latest=await checkOrderStatus();
+      if(latest.payment_status==="paid" || latest.payment_status==="processing"){
+        sessionStorage.setItem("lf_order",JSON.stringify({
+          ...order,
+          payment_status:latest.payment_status,
+          status:latest.status
+        }));
+        if(latest.payment_status==="paid") setPaidUI();
+        else{
+          payBtn.disabled=true;
+          payBtn.textContent="Payment received ✓";
+          state.textContent="Payment received. Final confirmation is processing…";
+        }
+        setTimeout(()=>{ location.href="./order-success.html"; },350);
+        return;
+      }
+    }catch{}
+
+    verificationInProgress=false;
+    payBtn.disabled=false;
+    payBtn.style.opacity="1";
+    payBtn.style.cursor="pointer";
+    payBtn.textContent="Check payment status";
+    state.textContent="We could not confirm the payment yet.";
+    error.textContent=e.message;
+  }
 }
 
 payBtn.addEventListener("click",async()=>{
+  if(paymentInProgress || verificationInProgress) return;
   error.textContent="";
+
+  // If this page was revisited after payment, check backend first.
   try{
+    const latest=await checkOrderStatus();
+    if(latest.payment_status==="paid" || latest.payment_status==="processing"){
+      verificationInProgress=true;
+      payBtn.disabled=true;
+      payBtn.textContent=latest.payment_status==="paid"?"Payment successful ✓":"Payment received ✓";
+      state.textContent=latest.payment_status==="paid"
+        ?"Payment confirmed. Opening your order…"
+        :"Payment received. Final confirmation is processing…";
+      setTimeout(()=>{location.href="./order-success.html";},350);
+      return;
+    }
+  }catch{}
+
+  try{
+    paymentInProgress=true;
     if(!paymentConfig) await prepare();
 
     const options={
@@ -81,22 +176,46 @@ payBtn.addEventListener("click",async()=>{
       theme:{},
       handler:verify,
       modal:{
-        ondismiss:function(){state.textContent="Payment window closed. Your order is still saved."}
+        ondismiss:function(){
+          paymentInProgress=false;
+          if(!verificationInProgress){
+            state.textContent="Payment window closed. Your order is still saved.";
+          }
+        }
       }
     };
 
     const rzp=new Razorpay(options);
     rzp.on("payment.failed",function(resp){
+      paymentInProgress=false;
       error.textContent=resp.error?.description||"Payment failed. Please try again.";
     });
     rzp.open();
   }catch(e){
+    paymentInProgress=false;
     error.textContent=e.message;
     payBtn.disabled=false;
   }
 });
 
-prepare().catch(e=>{
-  error.textContent=e.message;
-  payBtn.disabled=false;
-});
+// On reload/back navigation, never blindly show Pay again if payment was already received.
+(async()=>{
+  try{
+    const latest=await checkOrderStatus();
+    if(latest.payment_status==="paid" || latest.payment_status==="processing"){
+      verificationInProgress=true;
+      payBtn.disabled=true;
+      payBtn.textContent=latest.payment_status==="paid"?"Payment successful ✓":"Payment received ✓";
+      state.textContent=latest.payment_status==="paid"
+        ?"Payment confirmed. Opening your order…"
+        :"Payment received. Final confirmation is processing…";
+      setTimeout(()=>{location.href="./order-success.html";},500);
+      return;
+    }
+  }catch{}
+
+  prepare().catch(e=>{
+    error.textContent=e.message;
+    payBtn.disabled=false;
+  });
+})();
