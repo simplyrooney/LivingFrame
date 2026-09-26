@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment · Living Frame</title>
+<link rel="stylesheet" href="./assets/css/order.css">
+</head>
+<body>
+<header class="site-nav shell"><a class="brand" href="./">Living Frame</a><span class="checkout-step">Payment</span></header>
+<main class="center-page shell">
+  <div class="payment-card">
+    <p class="eyebrow">STEP 3</p>
+    <h1 class="checkout-title">Ready for payment.</h1>
+    <p>Your photo, video and delivery details are safely attached to <strong id="paymentOrder">this order</strong>.</p>
+    <div class="notice"><b>Phase 1 complete.</b><br>Razorpay payment will be connected in the next step. This order currently remains <code>payment_pending</code>.</div>
+    <a href="./" class="btn secondary">Back to home</a>
+  </div>
+</main>
+<script>
+const s=JSON.parse(sessionStorage.getItem("lf_order")||"null");
+if(s?.order_number) document.getElementById("paymentOrder").textContent=s.order_number;
+</script>
+</body>
+</html>
