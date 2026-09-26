@@ -1,111 +1,438 @@
-+91
-Lines changed: 91 additions & 0 deletions
-Original file line number	Diff line number	Diff line change
-@@ -0,0 +1,91 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Living Frame · Admin</title>
-<link rel="stylesheet" href="./assets/css/admin.css">
-</head>
-<body>
-<header class="topbar">
-  <div><div class="brand">Living Frame</div><div class="sub">Admin Console</div></div>
-  <div class="top-actions"><span id="adminIdentity"></span><button id="logoutBtn" class="ghost hidden">Sign out</button></div>
-</header>
-<main>
-<section id="loginView" class="login-wrap">
-  <div class="login-card">
-    <p class="eyebrow">ADMIN ACCESS</p>
-    <h1>Manage Living Frames</h1>
-    <p class="muted">Sign in with the Supabase account configured as administrator.</p>
-    <form id="loginForm">
-      <label>Email<input id="email" type="email" required></label>
-      <label>Password<input id="password" type="password" required></label>
-      <button class="primary" type="submit">Sign in</button>
-      <p id="loginError" class="error"></p>
-    </form>
-  </div>
-</section>
-<section id="dashboardView" class="dashboard hidden">
-  <div class="page-head">
-    <div><p class="eyebrow">OPERATIONS</p><h1>Frame Orders</h1>
-    <p class="muted">Review originals, configure MyWebAR, then print and ship.</p></div>
-    <button id="refreshBtn" class="ghost">Refresh</button>
-  </div>
-  <div id="stats" class="stats"></div>
-  <div class="toolbar">
-    <input id="searchInput" type="search" placeholder="Search frame code, title, customer…">
-    <select id="statusFilter">
-      <option value="">All statuses</option>
-      <option>draft</option><option>assets_uploaded</option><option>awaiting_ar_setup</option>
-      <option>ar_configured</option><option>ready_to_print</option><option>printed</option>
-      <option>shipped</option><option>ready</option><option>failed</option><option>archived</option>
-    </select>
-  </div>
-  <div id="orders" class="orders"></div>
-  <div id="emptyState" class="empty hidden">No matching frames.</div>
-</section>
-</main>
-<template id="orderTemplate">
-<article class="order-card">
-  <div class="order-head">
-    <div><div class="frame-code"></div><h2 class="frame-title"></h2><div class="order-meta"></div></div>
-    <div class="status-pill"></div>
-  </div>
-  <div class="asset-grid">
-    <a class="asset photo-link" target="_blank" rel="noopener">
-      <div class="asset-label">PHOTO</div><img class="photo-preview" alt="Frame photo">
-      <div class="asset-action">Open original ↗</div>
-    </a>
-    <a class="asset video-link" target="_blank" rel="noopener">
-      <div class="asset-label">VIDEO</div><div class="video-box">▶</div>
-      <div class="asset-action">Open original ↗</div>
-    </a>
-  </div>
-  <div class="editor">
-    <label>MyWebAR published URL<input class="ar-url" type="url" placeholder="https://mywebar.com/p/..."></label>
-    <label>Status
-      <select class="status-select">
-        <option>draft</option><option>assets_uploaded</option><option>awaiting_ar_setup</option>
-        <option>ar_configured</option><option>ready_to_print</option><option>printed</option>
-        <option>shipped</option><option>ready</option><option>failed</option><option>archived</option>
-      </select>
-    </label>
-    <label class="notes-wrap">Admin notes<textarea class="admin-notes" rows="3"></textarea></label>
-    <div class="editor-actions">
-      <button class="save-btn primary">Save changes</button>
-      <a class="viewer-link ghost-link" target="_blank" rel="noopener">Test AR viewer ↗</a>
-      <span class="save-state"></span>
-    </div>
-  </div>
-</article>
-</template>
-<script src="./assets/js/admin.js"></script>
-</body></html>
 
-/* Equal-size aligned asset buttons */
-.asset-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+:root{
+  --bg:#f4f1ea;
+  --card:#fff;
+  --ink:#171717;
+  --muted:#746f67;
+  --line:#ddd7cd;
+  --accent:#ff6b4a;
+  --ok:#237a45;
+  --danger:#b42318;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+.hidden{
+  display:none!important;
+}
+
+/* ---------------- Header ---------------- */
+
+.topbar{
+  height:72px;
+  padding:0 max(24px,calc((100vw - 1180px)/2));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#111;
+  color:white;
+}
+
+.brand{
+  font-weight:900;
+  font-size:19px;
+}
+
+.sub{
+  font-size:11px;
+  color:#999;
+  letter-spacing:.14em;
+}
+
+.top-actions{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:13px;
+}
+
+/* ---------------- Layout ---------------- */
+
+main{
+  width:min(1180px,calc(100% - 32px));
+  margin:auto;
+}
+
+.login-wrap{
+  min-height:calc(100vh - 72px);
+  display:grid;
+  place-items:center;
+}
+
+.login-card{
+  width:min(430px,100%);
+  background:white;
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:34px;
+  box-shadow:0 20px 70px #0000000d;
+}
+
+.eyebrow{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.18em;
+  color:var(--muted);
+}
+
+h1,
+h2{
+  font-family:Georgia,serif;
+  font-weight:500;
+  letter-spacing:-.03em;
+}
+
+h1{
+  font-size:48px;
+  line-height:.95;
+  margin:10px 0 16px;
+}
+
+.muted{
+  color:var(--muted);
+  line-height:1.55;
+}
+
+/* ---------------- Forms ---------------- */
+
+.login-card form{
+  display:grid;
+  gap:15px;
+  margin-top:26px;
+}
+
+label{
+  display:grid;
+  gap:7px;
+  font-size:12px;
+  font-weight:800;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  border:1px solid var(--line);
+  background:#fbfaf7;
+  border-radius:12px;
+  padding:12px 13px;
+  color:var(--ink);
+}
+
+textarea{
+  resize:vertical;
+}
+
+.primary,
+.ghost{
+  border:0;
+  border-radius:999px;
+  padding:12px 17px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.primary{
+  background:#171717;
+  color:white;
+}
+
+.ghost{
+  background:#fff;
+  color:#171717;
+  border:1px solid var(--line);
+}
+
+.error{
+  color:var(--danger);
+  font-size:13px;
+  margin:0;
+}
+
+/* ---------------- Dashboard ---------------- */
+
+.dashboard{
+  padding:56px 0 90px;
+}
+
+.page-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.page-head h1{
+  margin:8px 0;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:28px 0;
+}
+
+.stat{
+  background:white;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+}
+
+.stat b{
+  display:block;
+  font-family:Georgia,serif;
+  font-size:32px;
+  font-weight:500;
+}
+
+.stat span{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:800;
+  letter-spacing:.08em;
+}
+
+.toolbar{
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:12px;
+  margin:22px 0;
+}
+
+.orders{
+  display:grid;
+  gap:18px;
+}
+
+.order-card{
+  background:white;
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:24px;
+}
+
+.order-head{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.frame-code{
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.12em;
+  color:var(--accent);
+}
+
+.frame-title{
+  font-size:30px;
+  margin:6px 0;
+}
+
+.order-meta{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.status-pill{
+  height:max-content;
+  border-radius:999px;
+  background:#f2efe8;
+  padding:8px 11px;
+  font-size:11px;
+  font-weight:900;
+}
+
+/* ---------------- Assets ---------------- */
+
+.asset-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:22px 0;
+}
+
+.asset{
+  position:relative;
+  min-height:290px;
+  background:#f8f6f1;
+  border:1px solid var(--line);
+  border-radius:18px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding-bottom:72px;
+}
+
+.asset-label{
+  position:absolute;
+  top:12px;
+  left:12px;
+  background:#111;
+  color:#fff;
+  border-radius:999px;
+  padding:6px 8px;
+  font-size:10px;
+  font-weight:900;
+  z-index:2;
+}
+
+.photo-preview{
+  width:100%;
+  height:246px;
+  object-fit:contain;
+  background:#eee;
+}
+
+.video-box{
+  font-size:46px;
+}
+
+.asset-actions{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:12px;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  z-index:3;
 }
 
 .asset-actions .ghost-link,
-.asset-actions .small-btn {
-  width: 150px;
-  height: 44px;
-  padding: 0 14px;
+.asset-actions .small-btn{
+  width:150px;
+  height:44px;
+  padding:0 14px;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.asset-actions .ghost-link{
+  background:#fff;
+  color:#171717;
+  border:1px solid var(--line);
+}
+
+.asset-actions .small-btn{
+  border:0;
+  background:#171717;
+  color:#fff;
+  cursor:pointer;
+}
+
+.asset.is-missing{
+  opacity:.5;
+}
+
+.asset.is-missing .asset-actions{
+  pointer-events:none;
+}
+
+/* ---------------- Editor ---------------- */
+
+.editor{
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:14px;
+  border-top:1px solid var(--line);
+  padding-top:20px;
+}
+
+.notes-wrap{
+  grid-column:1/-1;
+}
+
+.editor-actions{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.ghost-link{
+  text-decoration:none;
+  color:#171717;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:11px 15px;
+  font-weight:800;
+  font-size:13px;
+}
+
+.save-state{
+  font-size:12px;
+  color:var(--ok);
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:70px;
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media(max-width:760px){
+  h1{
+    font-size:40px;
+  }
+
+  .stats{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .toolbar,
+  .asset-grid,
+  .editor{
+    grid-template-columns:1fr;
+  }
+
+  .order-head,
+  .page-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .photo-preview{
+    height:220px;
+  }
+
+  .asset-actions{
+    flex-direction:column;
+  }
+
+  .asset-actions .ghost-link,
+  .asset-actions .small-btn{
+    width:min(100%,220px);
+  }
 }
