@@ -4,7 +4,20 @@ const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8"};
 export default{
  async fetch(request,env){
   const url=new URL(request.url);
-  const cors={"Access-Control-Allow-Origin":env.FRONTEND_ORIGIN||"*","Access-Control-Allow-Headers":"Authorization, Content-Type","Access-Control-Allow-Methods":"GET, POST, PATCH, OPTIONS","Vary":"Origin"};
+  const origin = request.headers.get("Origin") || "";
+
+const allowedOrigin =
+  origin === "https://living-frame.pages.dev" ||
+  /^https:\/\/[a-z0-9-]+\.living-frame\.pages\.dev$/i.test(origin)
+    ? origin
+    : env.FRONTEND_ORIGIN;
+
+const cors = {
+  "Access-Control-Allow-Origin": allowedOrigin,
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+  "Vary": "Origin",
+};
   if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
   try{
    if(request.method==="GET"&&url.pathname==="/api/health")
