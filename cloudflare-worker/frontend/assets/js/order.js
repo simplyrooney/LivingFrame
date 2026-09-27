@@ -12,14 +12,17 @@ const progressText=document.getElementById("progressText");
 
 let frameVariant="classic-black";
 let frameSize="8x10";
+let existingOrder=window.lfReadCart?.()||null;
 
 document.querySelectorAll(".frame-option").forEach(btn=>btn.addEventListener("click",()=>{
   document.querySelectorAll(".frame-option").forEach(x=>x.classList.remove("selected"));
-  btn.classList.add("selected");frameVariant=btn.dataset.value;
+  btn.classList.add("selected");
+  frameVariant=btn.dataset.value;
 }));
 document.querySelectorAll(".size-option").forEach(btn=>btn.addEventListener("click",()=>{
   document.querySelectorAll(".size-option").forEach(x=>x.classList.remove("selected"));
-  btn.classList.add("selected");frameSize=btn.dataset.value;
+  btn.classList.add("selected");
+  frameSize=btn.dataset.value;
 }));
 
 photoInput.addEventListener("change",()=>photoName.textContent=photoInput.files[0]?.name||"");
@@ -40,21 +43,25 @@ async function jsonFetch(url,options={}){
   return d;
 }
 async function signedUpload(url,file){
-  const form=new FormData();
-  form.append("cacheControl","3600");
-  form.append("",file);
+  const form=new FormData();form.append("cacheControl","3600");form.append("",file);
   const r=await fetch(url,{method:"PUT",body:form});
   if(!r.ok) throw new Error(`Upload failed (${r.status})`);
 }
-function progress(p,text){progressWrap.classList.remove("hidden");progressBar.style.width=`${p}%`;progressText.textContent=text}
+function progress(p,text){
+  progressWrap.classList.remove("hidden");
+  progressBar.style.width=`${p}%`;
+  progressText.textContent=text;
+}
 
 orderBtn.addEventListener("click",async()=>{
   orderError.textContent="";
+  if(existingOrder?.assets_uploaded){location.href="./cart.html";return}
+
   const photo=photoInput.files[0],video=videoInput.files[0];
   try{
     validate(photo,video);
     orderBtn.disabled=true;
-    progress(8,"Creating your order…");
+    progress(8,"Preparing your cart item…");
 
     const draft=await jsonFetch(`${API}/api/public/orders/draft`,{
       method:"POST",
@@ -67,13 +74,10 @@ orderBtn.addEventListener("click",async()=>{
       })
     });
 
-    progress(22,"Uploading photo…");
-    await signedUpload(draft.photo_upload_url,photo);
+    progress(22,"Uploading photo…");await signedUpload(draft.photo_upload_url,photo);
+    progress(58,"Uploading video…");await signedUpload(draft.video_upload_url,video);
 
-    progress(58,"Uploading video…");
-    await signedUpload(draft.video_upload_url,video);
-
-    progress(88,"Finalizing uploads…");
+    progress(88,"Adding to cart…");
     await jsonFetch(`${API}/api/public/orders/${encodeURIComponent(draft.order_id)}/assets-complete`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -81,17 +85,15 @@ orderBtn.addEventListener("click",async()=>{
     });
 
     const session={
-      order_id:draft.order_id,
-      order_token:draft.order_token,
-      order_number:draft.order_number,
-      customer_id:draft.customer_id,
-      frame_code:draft.frame_code,
-      frame_variant:frameVariant,
-      frame_size:frameSize
+      order_id:draft.order_id,order_token:draft.order_token,order_number:draft.order_number,
+      customer_id:draft.customer_id,frame_code:draft.frame_code,frame_variant:frameVariant,
+      frame_size:frameSize,photo_name:photo.name,video_name:video.name,assets_uploaded:true
     };
     sessionStorage.setItem("lf_order",JSON.stringify(session));
-    progress(100,"Ready for delivery details");
-    location.href="./checkout.html";
+    existingOrder=session;
+    window.lfUpdateHeader?.();
+    progress(100,"Added to cart");
+    location.href="./cart.html";
   }catch(e){
     orderError.textContent=e.message;
     orderBtn.disabled=false;

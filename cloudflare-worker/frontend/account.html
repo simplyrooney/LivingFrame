@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Account · Living Frame</title>
+<link rel="stylesheet" href="./assets/css/order.css">
+<link rel="stylesheet" href="./assets/css/customer-shell.css">
+</head>
+<body>
+<header class="site-nav shell shop-nav">
+  <a class="brand" href="./">Living Frame</a>
+  <div class="shop-actions">
+    <a id="accountLink" class="nav-action" href="./account.html">Account</a>
+    <a class="nav-action cart-link" href="./cart.html">Cart <span id="cartCount" class="cart-count">0</span></a>
+  </div>
+</header>
+
+<main class="account-page shell">
+  <div class="account-head">
+    <div>
+      <p class="eyebrow">MY ACCOUNT</p>
+      <h1>Your orders.</h1>
+      <p id="accountEmail" class="muted"></p>
+    </div>
+    <button id="customerLogoutBtn" class="btn secondary" type="button">Sign out</button>
+  </div>
+
+  <div id="accountError" class="error"></div>
+  <div id="ordersList" class="customer-orders"></div>
+  <div id="ordersEmpty" class="empty-cart hidden">
+    <h2>No orders yet.</h2>
+    <p>Your paid Living Frame orders will appear here.</p>
+    <a class="btn primary" href="./#create">Create a frame</a>
+  </div>
+</main>
+
+<script src="./assets/js/customer-auth.js"></script>
+<script src="./assets/js/account.js"></script>
+</body>
+</html>
