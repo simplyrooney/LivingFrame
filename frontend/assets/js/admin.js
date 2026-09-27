@@ -108,9 +108,29 @@ function renderFrames(){
   container.appendChild(node);
  }
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await login($("email").value.trim(),$("password").value);showDashboard();await loadFrames()}catch(err){$("loginError").textContent=err.message}});
-$("logoutBtn").addEventListener("click",logout);
-$("refreshBtn").addEventListener("click",loadFrames);
-$("searchInput").addEventListener("input",renderFrames);
-$("statusFilter").addEventListener("change",renderFrames);
-(async()=>{try{await getConfig();if(!accessToken)return showLogin();showDashboard();await loadFrames()}catch(e){logout();$("loginError").textContent=e.message}})();
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  loginError.textContent = "";
+
+  const emailInput = document.getElementById("adminLoginEmail");
+  const passwordInput = document.getElementById("adminLoginPassword");
+
+  if (!emailInput || !passwordInput) {
+    loginError.textContent = "Admin login fields could not be found.";
+    return;
+  }
+
+  try {
+    await supabaseLogin(
+      emailInput.value.trim(),
+      passwordInput.value
+    );
+
+    showDashboard();
+    await load();
+
+  } catch (err) {
+    loginError.textContent = err.message;
+  }
+});
