@@ -1,0 +1,92 @@
+// ADD INSIDE fetch(), BEFORE THE FINAL 404.
+//
+// Admin download directly from ORDER.
+// This works even if a fulfilment frame has not been created yet.
+const orderDownload=url.pathname.match(
+  /^\/api\/admin\/orders\/([^/]+)\/download\/(photo|video)$/
+);
+
+if(request.method==="GET"&&orderDownload){
+  const admin=await requireAdmin(request,env);
+  if(!admin.ok){
+    return json({error:admin.error},admin.status,cors);
+  }
+
+  const orderId=decodeURIComponent(orderDownload[1]);
+  const kind=orderDownload[2];
+
+  const r=await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_id,frame_code,created_at,photo_path,video_path&limit=1`,
+    {headers:svc(env)}
+  );
+
+  if(!r.ok){
+    return json({
+      error:"Could not load order",
+      detail:await r.text()
+    },500,cors);
+  }
+
+  const rows=await r.json();
+  const o=rows?.[0];
+
+  if(!o){
+    return json({error:"Order not found"},404,cors);
+  }
+
+  const path=kind==="photo"
+    ? o.photo_path
+    : o.video_path;
+
+  if(!path){
+    return json({
+      error:`No ${kind} uploaded for this order`
+    },404,cors);
+  }
+
+  const bucket=kind==="photo"
+    ? (env.PHOTO_BUCKET||"living-frame-photos")
+    : (env.VIDEO_BUCKET||"living-frame-videos");
+
+  const signed=await sign(env,bucket,path);
+
+  if(!signed){
+    return json({
+      error:"Could not create download URL"
+    },500,cors);
+  }
+
+  const asset=await fetch(signed);
+
+  if(!asset.ok){
+    return json({
+      error:"Could not download stored file"
+    },502,cors);
+  }
+
+  const filename=
+    `${safeFilenamePart(o.customer_id||o.frame_code||"Customer")}_`+
+    `${formatDDMMYYYY(o.created_at)}_`+
+    `${kind==="photo"?"Photo":"Video"}.`+
+    `${getExtension(path,kind==="photo"?"jpg":"mp4")}`;
+
+  const headers=new Headers(cors);
+
+  headers.set(
+    "Content-Type",
+    asset.headers.get("Content-Type")||
+    "application/octet-stream"
+  );
+
+  headers.set(
+    "Content-Disposition",
+    `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+  );
+
+  headers.set("Cache-Control","private, no-store");
+
+  return new Response(asset.body,{
+    status:200,
+    headers
+  });
+}

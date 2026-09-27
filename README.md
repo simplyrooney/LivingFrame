@@ -1,103 +1,48 @@
-# Living Frame Customer Ordering — Phase 1
+# Living Frame Admin Media Fix
 
-This patch adds the guest customer journey:
+This fixes both issues shown in the screenshots:
 
-Home
-→ upload photo/video
-→ choose frame and size
-→ create draft order
-→ upload originals directly to private Supabase Storage
-→ delivery details
-→ payment placeholder
-
-No customer login is used.
-
-## Included frontend files
-
-- `frontend/index.html`
-- `frontend/checkout.html`
-- `frontend/payment.html`
-- `frontend/assets/css/order.css`
-- `frontend/assets/js/order.js`
-- `frontend/assets/js/checkout.js`
-
-## Backend
-
-Overwrite:
-`cloudflare-worker/src/index.js`
-
-Worker version becomes `3.0.0`.
-
-## Database
-
-Run:
-`sql/002-customer-orders-phase1.sql`
-
-in Supabase SQL Editor.
+1. View / Download buttons are placed in a dedicated footer below each upload.
+2. Photo and video use `object-fit: contain`, so the full uploaded media is visible.
+3. Downloads now use the ORDER record instead of the fulfilment FRAME record.
+   This means even guest/pending orders with no frame record can be downloaded.
 
 ## Install
 
-Copy the patch files into:
-`D:\AR\LivingFrame-full-project`
+### 1. Replace admin.js
+Replace:
+frontend/assets/js/admin.js
 
-Then run the SQL migration.
+with:
+frontend/assets/js/admin.js from this package.
 
-Deploy the Worker:
+### 2. Add CSS file
+Copy:
+frontend/assets/css/admin-media-fix.css
 
-```powershell
+Then in frontend/admin.html add this AFTER the other admin CSS files:
+
+<link rel="stylesheet" href="./assets/css/admin-media-fix.css">
+
+It must load last so it overrides older conflicting media styles.
+
+### 3. Add Worker order-download route
+Copy the route from:
+cloudflare-worker/admin-order-download-route.txt
+
+Paste it inside cloudflare-worker/src/index.js,
+inside fetch(),
+before the final:
+return json({error:"Not found"},404,cors);
+
+### 4. Deploy Worker
 cd D:\AR\LivingFrame-full-project\cloudflare-worker
 npm.cmd run deploy
-```
 
-Test `/api/health` and confirm `3.0.0`.
-
-Push frontend:
-
-```powershell
+### 5. Deploy frontend
 cd D:\AR\LivingFrame-full-project
 git add .
-git commit -m "Add guest customer ordering phase 1"
+git commit -m "Fix admin media preview and download buttons"
 git push
-```
 
-## Test flow
-
-Open:
-`https://living-frame.pages.dev/`
-
-1. Select a photo.
-2. Select a video.
-3. Choose frame/size.
-4. Click Order this frame.
-5. Files upload to private Supabase Storage.
-6. Delivery page opens.
-7. Enter delivery details.
-8. Continue to payment.
-9. Payment page shows the Phase 1 placeholder.
-
-The created frame will appear in the existing admin dashboard with status `assets_uploaded`.
-
-## Current placeholder choices
-
-Frame styles:
-- Classic Black
-- Natural Oak
-- Gallery White
-
-Sizes:
-- 8×10
-- 12×16
-
-These are placeholders until your real frame catalog and prices are finalized.
-
-## Production hardening before launch
-
-The draft endpoint is intentionally simple for MVP testing. Before public launch add:
-- Cloudflare Turnstile
-- rate limiting
-- finalized MIME/type restrictions
-- real catalog/prices
-- abandoned draft cleanup
-- Razorpay payment verification
-
-Supabase signed upload URLs are time-limited and let the browser upload without exposing the backend secret key.
+Then hard refresh the admin page with Ctrl+Shift+R.

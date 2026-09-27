@@ -60,11 +60,7 @@ function fullAddress(o) {
 async function getConfig() {
   const r = await fetch(`${API}/api/public/config`);
   const d = await r.json();
-
-  if (!r.ok) {
-    throw new Error(d.error || "Could not load configuration");
-  }
-
+  if (!r.ok) throw new Error(d.error || "Could not load configuration");
   return d;
 }
 
@@ -86,40 +82,26 @@ async function supabaseLogin(email, password) {
   const d = await r.json();
 
   if (!r.ok || !d.access_token) {
-    throw new Error(
-      d.error_description ||
-      d.msg ||
-      "Login failed"
-    );
+    throw new Error(d.error_description || d.msg || "Login failed");
   }
 
   token = d.access_token;
   adminEmail = email;
-
   localStorage.setItem("lf_admin_token", token);
   localStorage.setItem("lf_admin_email", email);
 }
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
+  if (token) headers.set("Authorization", `Bearer ${token}`);
   if (options.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const r = await fetch(`${API}${path}`, {
-    ...options,
-    headers
-  });
+  const r = await fetch(`${API}${path}`, { ...options, headers });
 
   let d = {};
-  try {
-    d = await r.json();
-  } catch {}
+  try { d = await r.json(); } catch {}
 
   if (r.status === 401) {
     localStorage.removeItem("lf_admin_token");
@@ -130,47 +112,31 @@ async function api(path, options = {}) {
   }
 
   if (!r.ok) {
-    throw new Error(
-      d.error ||
-      d.detail ||
-      `Request failed (${r.status})`
-    );
+    throw new Error(d.error || d.detail || `Request failed (${r.status})`);
   }
 
   return d;
 }
 
 function showLogin() {
-  if (dashboard) dashboard.classList.add("hidden");
-  if (loginPanel) loginPanel.classList.remove("hidden");
-
-  document
-    .querySelector(".admin-top-actions")
-    ?.classList.add("hidden");
+  dashboard?.classList.add("hidden");
+  loginPanel?.classList.remove("hidden");
+  document.querySelector(".admin-top-actions")?.classList.add("hidden");
 }
 
 function showDashboard() {
-  if (loginPanel) loginPanel.classList.add("hidden");
-  if (dashboard) dashboard.classList.remove("hidden");
-
-  document
-    .querySelector(".admin-top-actions")
-    ?.classList.remove("hidden");
+  loginPanel?.classList.add("hidden");
+  dashboard?.classList.remove("hidden");
+  document.querySelector(".admin-top-actions")?.classList.remove("hidden");
 
   const emailEl = document.getElementById("adminEmail");
-  if (emailEl) {
-    emailEl.textContent = adminEmail;
-  }
+  if (emailEl) emailEl.textContent = adminEmail;
 }
 
 function renderSummary() {
   if (!summaryCards) return;
-
   const orders = groups.flatMap((g) => g.orders || []);
-  const paidOrders = orders.filter(
-    (o) => o.payment_status === "paid"
-  );
-
+  const paidOrders = orders.filter((o) => o.payment_status === "paid");
   const paidValue = paidOrders.reduce(
     (sum, o) => sum + Number(o.price_paise || 0),
     0
@@ -188,7 +154,7 @@ function orderMatches(order, query, payment) {
   if (payment && order.payment_status !== payment) return false;
   if (!query) return true;
 
-  const haystack = [
+  return [
     order.order_number,
     order.customer_id,
     order.frame_code,
@@ -203,9 +169,7 @@ function orderMatches(order, query, payment) {
     order.state,
     order.postal_code,
     order.country
-  ].join(" ").toLowerCase();
-
-  return haystack.includes(query);
+  ].join(" ").toLowerCase().includes(query);
 }
 
 function customerMatches(group, query, payment) {
@@ -237,8 +201,12 @@ function mediaCard(kind, url, downloadUrl) {
     <div class="media-card">
       <div class="media-preview">${preview}</div>
       <div class="media-actions">
-        <a class="small-btn" href="${esc(url)}" target="_blank" rel="noopener">View</a>
-        ${downloadUrl ? `<a class="small-btn" href="${esc(downloadUrl)}">Download</a>` : ""}
+        <a class="small-btn" href="${esc(url)}" target="_blank" rel="noopener">
+          View ${kind === "photo" ? "Photo" : "Video"}
+        </a>
+        <a class="small-btn" href="${esc(downloadUrl)}">
+          Download ${kind === "photo" ? "Photo" : "Video"}
+        </a>
       </div>
     </div>
   `;
@@ -247,12 +215,12 @@ function mediaCard(kind, url, downloadUrl) {
 function orderCard(order) {
   const frame = order.frame || {};
 
-  const photoDownloadUrl = frame.id
-    ? `${API}/api/admin/frames/${encodeURIComponent(frame.id)}/download/photo`
+  const photoDownloadUrl = order.id
+    ? `${API}/api/admin/orders/${encodeURIComponent(order.id)}/download/photo`
     : "";
 
-  const videoDownloadUrl = frame.id
-    ? `${API}/api/admin/frames/${encodeURIComponent(frame.id)}/download/video`
+  const videoDownloadUrl = order.id
+    ? `${API}/api/admin/orders/${encodeURIComponent(order.id)}/download/video`
     : "";
 
   return `
@@ -369,7 +337,6 @@ function customerGroup(group, index, query, payment) {
           <b>⌄</b>
         </div>
       </button>
-
       <div class="customer-orders-wrap">
         ${shownOrders.map(orderCard).join("")}
       </div>
@@ -388,16 +355,11 @@ function render() {
     customerMatches(group, query, payment)
   );
 
-  if (!filteredGroups.length) {
-    customersList.innerHTML = `<div class="empty-admin">No matching customers or orders.</div>`;
-    return;
-  }
-
-  customersList.innerHTML = filteredGroups
-    .map((group, index) =>
-      customerGroup(group, index, query, payment)
-    )
-    .join("");
+  customersList.innerHTML = filteredGroups.length
+    ? filteredGroups.map((group, index) =>
+        customerGroup(group, index, query, payment)
+      ).join("")
+    : `<div class="empty-admin">No matching customers or orders.</div>`;
 
   customersList.querySelectorAll("[data-toggle]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -419,17 +381,16 @@ async function saveFrame(frameId, button) {
   if (adminError) adminError.textContent = "";
 
   try {
-    const arInput = document.getElementById(`ar-${frameId}`);
-    const statusInput = document.getElementById(`status-${frameId}`);
-    const notesInput = document.getElementById(`notes-${frameId}`);
-
     await api(`/api/admin/frames/${encodeURIComponent(frameId)}`, {
       method: "PATCH",
       body: JSON.stringify({
         ar_provider: "mywebar",
-        ar_experience_url: arInput?.value.trim() || null,
-        status: statusInput?.value || "awaiting_ar_setup",
-        admin_notes: notesInput?.value.trim() || null
+        ar_experience_url:
+          document.getElementById(`ar-${frameId}`)?.value.trim() || null,
+        status:
+          document.getElementById(`status-${frameId}`)?.value || "awaiting_ar_setup",
+        admin_notes:
+          document.getElementById(`notes-${frameId}`)?.value.trim() || null
       })
     });
 
@@ -452,35 +413,26 @@ async function load() {
   render();
 }
 
-/* LOGIN */
 loginForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
   if (loginError) loginError.textContent = "";
 
   const emailInput = document.getElementById("adminLoginEmail");
   const passwordInput = document.getElementById("adminLoginPassword");
 
   if (!emailInput || !passwordInput) {
-    if (loginError) {
-      loginError.textContent = "Admin login fields could not be found.";
-    }
+    if (loginError) loginError.textContent = "Admin login fields could not be found.";
     return;
   }
 
   const submitButton = loginForm.querySelector('button[type="submit"]');
-
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = "Signing in…";
   }
 
   try {
-    await supabaseLogin(
-      emailInput.value.trim(),
-      passwordInput.value
-    );
-
+    await supabaseLogin(emailInput.value.trim(), passwordInput.value);
     showDashboard();
     await load();
   } catch (e) {
@@ -493,7 +445,6 @@ loginForm?.addEventListener("submit", async (e) => {
   }
 });
 
-/* LOGOUT */
 document.getElementById("signOutBtn")?.addEventListener("click", () => {
   localStorage.removeItem("lf_admin_token");
   localStorage.removeItem("lf_admin_email");
@@ -502,26 +453,15 @@ document.getElementById("signOutBtn")?.addEventListener("click", () => {
   showLogin();
 });
 
-/* REFRESH */
 document.getElementById("refreshBtn")?.addEventListener("click", async () => {
-  try {
-    await load();
-  } catch {}
+  try { await load(); } catch {}
 });
 
-/* SEARCH */
 searchInput?.addEventListener("input", render);
-
-/* PAYMENT FILTER */
 paymentFilter?.addEventListener("change", render);
 
-/* INITIAL LOAD */
 (async () => {
-  if (!token) {
-    showLogin();
-    return;
-  }
-
+  if (!token) return showLogin();
   try {
     showDashboard();
     await load();

@@ -1,0 +1,98 @@
+/* ===== Admin uploaded media visibility fix ===== */
+
+/* Keep action buttons below the media instead of over the image/video. */
+.customer-group .media-card{
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  background:#fff !important;
+}
+
+.customer-group .media-preview{
+  position:relative !important;
+  width:100% !important;
+  height:420px !important;
+  min-height:420px !important;
+  max-height:420px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:hidden !important;
+  background:#171717 !important;
+}
+
+/* Show the entire uploaded photo/video without cropping it. */
+.customer-group .media-preview img,
+.customer-group .media-preview video{
+  position:static !important;
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  margin:0 !important;
+  transform:none !important;
+}
+
+/* Force buttons into their own visible footer. */
+.customer-group .media-actions{
+  position:static !important;
+  inset:auto !important;
+  z-index:2 !important;
+  width:100% !important;
+  min-height:64px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  padding:12px !important;
+  background:#fff !important;
+  border-top:1px solid #e6dfd3 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+}
+
+.customer-group .media-actions .small-btn{
+  position:static !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:150px !important;
+  height:42px !important;
+  padding:0 16px !important;
+  border:1px solid #d8d0c4 !important;
+  border-radius:999px !important;
+  background:#fff !important;
+  color:#111 !important;
+  text-decoration:none !important;
+  font-size:12px !important;
+  font-weight:850 !important;
+  line-height:1 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+.customer-group .media-actions .small-btn:hover{
+  background:#111 !important;
+  color:#fff !important;
+  border-color:#111 !important;
+}
+
+@media(max-width:720px){
+  .customer-group .media-preview{
+    height:320px !important;
+    min-height:320px !important;
+    max-height:320px !important;
+  }
+
+  .customer-group .media-actions{
+    flex-direction:column !important;
+  }
+
+  .customer-group .media-actions .small-btn{
+    width:100% !important;
+  }
+}
