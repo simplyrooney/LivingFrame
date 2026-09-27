@@ -4,89 +4,54 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Living Frame · Admin</title>
 <link rel="stylesheet" href="./assets/css/admin.css">
+<link rel="stylesheet" href="./assets/css/admin-customer-orders.css">
 </head>
 <body>
-<header class="topbar">
-  <div><div class="brand">Living Frame</div><div class="sub">Admin Console</div></div>
-  <div class="top-actions"><span id="adminIdentity"></span><button id="logoutBtn" class="ghost hidden">Sign out</button></div>
+<header class="admin-topbar">
+  <div><strong>Living Frame</strong><small>Admin Console</small></div>
+  <div class="admin-top-actions"><span id="adminEmail"></span><button id="signOutBtn" class="ghost-btn">Sign out</button></div>
 </header>
-<main>
-<section id="loginView" class="login-wrap">
-  <div class="login-card">
-    <p class="eyebrow">ADMIN ACCESS</p><h1>Manage Living Frames</h1>
-    <p class="muted">Sign in with the configured Supabase admin account.</p>
-    <form id="loginForm">
-      <label>Email<input id="email" type="email" required></label>
-      <label>Password<input id="password" type="password" required></label>
-      <button class="primary" type="submit">Sign in</button>
-      <p id="loginError" class="error"></p>
-    </form>
-  </div>
+
+<main class="admin-shell">
+<section id="loginPanel" class="admin-login-card">
+  <p class="eyebrow">ADMIN ACCESS</p>
+  <h1>Manage Living Frames</h1>
+  <form id="loginForm">
+    <label>Email<input id="adminLoginEmail" type="email" required></label>
+    <label>Password<input id="adminLoginPassword" type="password" required></label>
+    <button class="primary-btn full" type="submit">Sign in</button>
+    <p id="loginError" class="error"></p>
+  </form>
 </section>
 
-<section id="dashboardView" class="dashboard hidden">
-  <div class="page-head">
-    <div><p class="eyebrow">OPERATIONS</p><h1>Frame Orders</h1>
-    <p class="muted">Review originals, configure MyWebAR, then print and ship.</p></div>
-    <button id="refreshBtn" class="ghost">Refresh</button>
+<section id="dashboard" class="hidden">
+  <div class="dashboard-head">
+    <div>
+      <p class="eyebrow">CUSTOMERS & ORDERS</p>
+      <h1>Customer orders</h1>
+      <p class="subtle">Customers are grouped once, with every order shown under the same account.</p>
+    </div>
+    <button id="refreshBtn" class="ghost-btn">Refresh</button>
   </div>
-  <div id="stats" class="stats"></div>
-  <div class="toolbar">
-    <input id="searchInput" type="search" placeholder="Search frame code, customer ID, title, customer…">
-    <select id="statusFilter">
-      <option value="">All statuses</option>
-      <option>draft</option><option>assets_uploaded</option><option>awaiting_ar_setup</option>
-      <option>ar_configured</option><option>ready_to_print</option><option>printed</option>
-      <option>shipped</option><option>ready</option><option>failed</option><option>archived</option>
+
+  <div id="summaryCards" class="summary-cards"></div>
+
+  <div class="admin-filters">
+    <input id="searchInput" type="search" placeholder="Search customer, order or frame code">
+    <select id="paymentFilter">
+      <option value="">All payments</option>
+      <option value="paid">Paid</option>
+      <option value="pending">Pending</option>
+      <option value="processing">Processing</option>
+      <option value="failed">Failed</option>
     </select>
   </div>
-  <div id="orders" class="orders"></div>
-  <div id="emptyState" class="empty hidden">No matching frames.</div>
+
+  <div id="adminError" class="error"></div>
+  <div id="customersList" class="customer-groups"></div>
 </section>
 </main>
 
-<template id="orderTemplate">
-<article class="order-card">
-  <div class="order-head">
-    <div><div class="frame-code"></div><h2 class="frame-title"></h2><div class="order-meta"></div></div>
-    <div class="status-pill"></div>
-  </div>
-
-  <div class="asset-grid">
-    <div class="asset photo-asset">
-      <div class="asset-label">PHOTO</div>
-      <img class="photo-preview" alt="Frame photo">
-      <div class="asset-actions">
-        <a class="open-photo ghost-link" target="_blank" rel="noopener">View ↗</a>
-        <button class="download-photo primary small-btn">Download Photo</button>
-      </div>
-    </div>
-    <div class="asset video-asset">
-      <div class="asset-label">VIDEO</div><div class="video-box">▶</div>
-      <div class="asset-actions">
-        <a class="open-video ghost-link" target="_blank" rel="noopener">View ↗</a>
-        <button class="download-video primary small-btn">Download Video</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="editor">
-    <label>MyWebAR published URL<input class="ar-url" type="url" placeholder="https://mywebar.com/p/..."></label>
-    <label>Status
-      <select class="status-select">
-        <option>draft</option><option>assets_uploaded</option><option>awaiting_ar_setup</option>
-        <option>ar_configured</option><option>ready_to_print</option><option>printed</option>
-        <option>shipped</option><option>ready</option><option>failed</option><option>archived</option>
-      </select>
-    </label>
-    <label class="notes-wrap">Admin notes<textarea class="admin-notes" rows="3"></textarea></label>
-    <div class="editor-actions">
-      <button class="save-btn primary">Save changes</button>
-      <a class="viewer-link ghost-link" target="_blank" rel="noopener">Test AR viewer ↗</a>
-      <span class="save-state"></span>
-    </div>
-  </div>
-</article>
-</template>
 <script src="./assets/js/admin.js"></script>
-</body></html>
+</body>
+</html>

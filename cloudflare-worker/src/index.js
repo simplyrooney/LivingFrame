@@ -285,6 +285,65 @@ export default{
     const rows=await r.json();return json(rows?.[0]||{ok:true},200,cors);
    }
 
+// Add inside fetch(), BEFORE final 404.
+if(request.method==="GET"&&url.pathname==="/api/admin/customers"){
+  const admin=await requireAdmin(request,env);
+  if(!admin.ok)return json({error:admin.error},admin.status,cors);
+
+  const ordersRes=await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?select=id,order_number,customer_id,customer_user_id,frame_id,frame_code,status,payment_status,frame_variant,frame_size,price_paise,currency,photo_path,video_path,customer_name,customer_email,phone,address_line1,address_line2,city,state,postal_code,country,razorpay_order_id,razorpay_payment_id,paid_at,created_at,updated_at&order=created_at.desc`,
+    {headers:svc(env)}
+  );
+  if(!ordersRes.ok)return json({error:"Could not load orders",detail:await ordersRes.text()},500,cors);
+  const orders=await ordersRes.json();
+
+  const framesRes=await fetch(
+    `${env.SUPABASE_URL}/rest/v1/frames?select=id,frame_code,status,ar_provider,ar_target_id,ar_experience_url,admin_notes,created_at,updated_at`,
+    {headers:svc(env)}
+  );
+  if(!framesRes.ok)return json({error:"Could not load fulfilment frames",detail:await framesRes.text()},500,cors);
+  const frames=await framesRes.json();
+  const frameById=new Map(frames.map(f=>[f.id,f]));
+
+  const enriched=await Promise.all(orders.map(async o=>({
+    ...o,
+    photo_url:o.photo_path?await sign(env,env.PHOTO_BUCKET||"living-frame-photos",o.photo_path):null,
+    video_url:o.video_path?await sign(env,env.VIDEO_BUCKET||"living-frame-videos",o.video_path):null,
+    frame:o.frame_id?(frameById.get(o.frame_id)||null):null
+  })));
+
+  const byCustomer=new Map();
+  for(const o of enriched){
+    const key=o.customer_user_id
+      ?`user:${o.customer_user_id}`
+      :o.customer_email
+        ?`email:${String(o.customer_email).trim().toLowerCase()}`
+        :`customer:${o.customer_id||o.id}`;
+
+    if(!byCustomer.has(key)){
+      byCustomer.set(key,{
+        customer_key:key,
+        customer_user_id:o.customer_user_id||null,
+        customer_name:o.customer_name||null,
+        customer_email:o.customer_email||null,
+        phone:o.phone||null,
+        orders:[]
+      });
+    }
+    const g=byCustomer.get(key);
+    if(o.customer_name)g.customer_name=o.customer_name;
+    if(o.customer_email)g.customer_email=o.customer_email;
+    if(o.phone)g.phone=o.phone;
+    g.orders.push(o);
+  }
+
+  const customers=[...byCustomer.values()]
+    .map(c=>({...c,orders:c.orders.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))}))
+    .sort((a,b)=>new Date(b.orders[0]?.created_at||0)-new Date(a.orders[0]?.created_at||0));
+
+  return json({customers,customer_count:customers.length,order_count:orders.length},200,cors);
+}
+
    return json({error:"Not found"},404,cors);
   }catch(err){
     const status=err?.status||500;
