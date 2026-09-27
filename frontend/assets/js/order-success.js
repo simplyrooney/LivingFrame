@@ -34,10 +34,22 @@ function render(d){
   document.getElementById("sStatus").textContent=d.status||"—";
   const h=document.getElementById("orderHeading");if(h)h.textContent=d.order_number||order.order_number||"Your order";
 
-  if(d.payment_status==="paid"){
-    state.textContent="Payment confirmed. Your order is now in the fulfilment queue.";
-    sessionStorage.removeItem("lf_order");
-    window.lfUpdateHeader?.();
+  if (d.payment_status === "paid") {
+  state.textContent =
+    "Payment confirmed. Your order is now in the fulfilment queue.";
+
+  // Clear completed order from cart
+  sessionStorage.removeItem("lf_order");
+
+  // Immediately update visible cart counter
+  document.querySelectorAll("#cartCount").forEach(el => {
+    el.textContent = "0";
+  });
+
+  if (window.lfUpdateHeader) {
+    window.lfUpdateHeader();
+  }
+
   }else if(d.payment_status==="processing"){
     state.textContent="Payment received. Final confirmation is still processing.";
   }else{
