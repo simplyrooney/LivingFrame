@@ -4,12 +4,20 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Delivery · Living Frame</title>
 <link rel="stylesheet" href="./assets/css/order.css">
+<link rel="stylesheet" href="./assets/css/customer-shell.css">
 </head>
 <body>
-<header class="site-nav shell"><a class="brand" href="./">Living Frame</a><span class="checkout-step">Delivery details</span></header>
+<header class="site-nav shell shop-nav">
+  <a class="brand" href="./">Living Frame</a>
+  <div class="shop-actions">
+    <a id="accountLink" class="nav-action" href="./account.html">Account</a>
+    <a class="nav-action cart-link" href="./cart.html">Cart <span id="cartCount" class="cart-count">1</span></a>
+  </div>
+</header>
+
 <main class="checkout shell">
   <section class="checkout-main">
-    <p class="eyebrow">STEP 2</p>
+    <p class="eyebrow">CHECKOUT</p>
     <h1 class="checkout-title">Where should we send it?</h1>
     <form id="deliveryForm" class="delivery-form">
       <div class="two"><label>Full name<input name="customer_name" required></label><label>Phone<input name="phone" inputmode="tel" required></label></div>
@@ -33,6 +41,8 @@
     <div class="summary-row"><span>Video</span><b>Uploaded ✓</b></div>
   </aside>
 </main>
+
+<script src="./assets/js/customer-auth.js"></script>
 <script src="./assets/js/checkout.js"></script>
 </body>
 </html>

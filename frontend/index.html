@@ -6,11 +6,23 @@
   <meta name="theme-color" content="#111111">
   <title>Living Frame</title>
   <link rel="stylesheet" href="./assets/css/order.css">
+  <link rel="stylesheet" href="./assets/css/customer-shell.css">
 </head>
 <body>
-<header class="site-nav shell">
+<header class="site-nav shell shop-nav">
   <a class="brand" href="./">Living Frame</a>
-  <nav><a href="#how">How it works</a><a href="#create">Create yours</a></nav>
+
+  <nav class="main-links">
+    <a href="#how">How it works</a>
+    <a href="#create">Create yours</a>
+  </nav>
+
+  <div class="shop-actions">
+    <a id="accountLink" class="nav-action" href="./auth.html">Login / Sign up</a>
+    <a class="nav-action cart-link" href="./cart.html">
+      Cart <span id="cartCount" class="cart-count">0</span>
+    </a>
+  </div>
 </header>
 
 <main>
@@ -21,7 +33,9 @@
     <p class="lead">Upload your favorite photo and video, choose your frame, and we’ll prepare the AR experience by hand.</p>
     <a class="btn primary" href="#create">Create your Living Frame</a>
   </div>
-  <div class="hero-frame"><div class="hero-photo">Your memory<br><span>comes alive</span></div></div>
+  <div class="hero-frame">
+    <div class="hero-photo">Your memory<br><span>comes alive</span></div>
+  </div>
 </section>
 
 <section id="how" class="section shell">
@@ -29,7 +43,7 @@
   <div class="steps">
     <article><b>01</b><h3>Upload</h3><p>Choose one photo and the video that belongs with it.</p></article>
     <article><b>02</b><h3>Choose frame</h3><p>Pick the frame style and size that suits your memory.</p></article>
-    <article><b>03</b><h3>We prepare it</h3><p>We manually align the AR video so your important moments stay in view.</p></article>
+    <article><b>03</b><h3>We prepare it</h3><p>We manually align the AR video so important parts stay in view.</p></article>
     <article><b>04</b><h3>Scan & relive</h3><p>Point your phone at the printed photo and watch it come alive.</p></article>
   </div>
 </section>
@@ -62,7 +76,7 @@
 
     <div class="chooser">
       <h3>Choose your frame</h3>
-      <div class="frame-options" id="frameOptions">
+      <div class="frame-options">
         <button class="frame-option selected" data-value="classic-black"><span class="swatch black"></span><b>Classic Black</b><small>Minimal & timeless</small></button>
         <button class="frame-option" data-value="natural-oak"><span class="swatch oak"></span><b>Natural Oak</b><small>Warm & organic</small></button>
         <button class="frame-option" data-value="gallery-white"><span class="swatch white"></span><b>Gallery White</b><small>Clean & modern</small></button>
@@ -71,7 +85,7 @@
 
     <div class="chooser">
       <h3>Choose size</h3>
-      <div class="size-options" id="sizeOptions">
+      <div class="size-options">
         <button class="size-option selected" data-value="8x10"><b>8 × 10</b><small>inches</small></button>
         <button class="size-option" data-value="12x16"><b>12 × 16</b><small>inches</small></button>
       </div>
@@ -79,17 +93,23 @@
 
     <div class="order-footer">
       <div>
-        <small>Next</small>
-        <strong>Delivery details</strong>
+        <small>Ready?</small>
+        <strong>Add your personalized frame to cart</strong>
       </div>
-      <button id="orderBtn" class="btn primary" type="button">Order this frame →</button>
+      <button id="orderBtn" class="btn primary" type="button">Add to cart →</button>
     </div>
-    <div id="progressWrap" class="progress-wrap hidden"><div id="progressBar"></div><span id="progressText">Preparing order…</span></div>
+
+    <div id="progressWrap" class="progress-wrap hidden">
+      <div id="progressBar"></div>
+      <span id="progressText">Preparing item…</span>
+    </div>
+
     <p id="orderError" class="error"></p>
   </div>
 </section>
 </main>
 
+<script src="./assets/js/customer-auth.js"></script>
 <script src="./assets/js/order.js"></script>
 </body>
 </html>

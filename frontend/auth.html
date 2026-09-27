@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login or Sign up · Living Frame</title>
+<link rel="stylesheet" href="./assets/css/order.css">
+<link rel="stylesheet" href="./assets/css/customer-shell.css">
+</head>
+<body>
+<header class="site-nav shell shop-nav">
+  <a class="brand" href="./">Living Frame</a>
+  <div class="shop-actions">
+    <a class="nav-action cart-link" href="./cart.html">Cart <span id="cartCount" class="cart-count">0</span></a>
+  </div>
+</header>
+
+<main class="auth-page shell">
+  <section class="auth-card">
+    <p class="eyebrow">YOUR ACCOUNT</p>
+    <h1 id="authTitle">Welcome back.</h1>
+    <p id="authSubtitle" class="muted">Sign in to continue with your Living Frame order.</p>
+
+    <div class="auth-tabs">
+      <button id="loginTab" class="auth-tab active" type="button">Login</button>
+      <button id="signupTab" class="auth-tab" type="button">Sign up</button>
+    </div>
+
+    <form id="authForm" class="auth-form">
+      <label>Email<input id="authEmail" type="email" autocomplete="email" required></label>
+      <label>Password<input id="authPassword" type="password" minlength="6" autocomplete="current-password" required></label>
+      <button id="authSubmit" class="btn primary full" type="submit">Login</button>
+      <p id="authMessage" class="muted"></p>
+      <p id="authError" class="error"></p>
+    </form>
+
+    <p class="auth-foot">You can browse and build your cart without an account. Login is required only when checkout begins.</p>
+  </section>
+</main>
+
+<script src="./assets/js/customer-auth.js"></script>
+<script src="./assets/js/auth-page.js"></script>
+</body>
+</html>
