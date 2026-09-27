@@ -28,8 +28,22 @@ async function login(email,password){
   localStorage.setItem("lf_admin_email",email);
 }
 function logout(){accessToken="";localStorage.removeItem("lf_admin_token");localStorage.removeItem("lf_admin_email");showLogin()}
-function showLogin(){$("loginView").classList.remove("hidden");$("dashboardView").classList.add("hidden");$("logoutBtn").classList.add("hidden");$("adminIdentity").textContent=""}
-function showDashboard(){$("loginView").classList.add("hidden");$("dashboardView").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");$("adminIdentity").textContent=localStorage.getItem("lf_admin_email")||"Admin"}
+function showLogin(){
+  dashboard.classList.add("hidden");
+  loginPanel.classList.remove("hidden");
+
+  document.querySelector(".admin-top-actions")
+    ?.classList.add("hidden");
+}
+function showDashboard(){
+  loginPanel.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+
+  document.querySelector(".admin-top-actions")
+    ?.classList.remove("hidden");
+
+  document.getElementById("adminEmail").textContent = adminEmail;
+}
 async function loadFrames(){const r=await api("/api/admin/frames");frames=r.frames||[];renderStats();renderFrames()}
 function renderStats(){
  const c={total:frames.length,pending:frames.filter(f=>["assets_uploaded","awaiting_ar_setup"].includes(f.status)).length,print:frames.filter(f=>f.status==="ready_to_print").length,shipped:frames.filter(f=>f.status==="shipped").length};
